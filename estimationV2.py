@@ -44,7 +44,7 @@ def test_order(features):
     return feature_dict
 
 
-def trainSVC(test, training_data, training_categories, test_data, test_categories, differences):
+def trainSVC(test, training_data, training_categories, test_data, test_categories, differences, save_dir, features, folder):
     #performance variables
     exact_accuracy = 0
     lenient_accuracy = 0
@@ -58,8 +58,8 @@ def trainSVC(test, training_data, training_categories, test_data, test_categorie
         actual = test_categories[index]
 
         # record performance
-        output_string = "estimated: {}, actual: {}\n".format(estimate[0], actual) #estimate[0]? Can we do them all at once?
-        text_output(output_string, "estimationResults", save_dir, features)
+        output_string = "\nEstimated: {}, Actual: {}".format(estimate[0], actual) #estimate[0]? Can we do them all at once?
+        text_output(output_string, "{}_estimations".format(folder), save_dir, features)
         difference = abs(int(estimate[0])-int(actual))
         if difference<=1:
             lenient_accuracy +=1
@@ -74,13 +74,14 @@ def trainSVC(test, training_data, training_categories, test_data, test_categorie
     perc_lenient_accuracy = lenient_accuracy/len(test_data) *100
 
     output_string = "\nTest {}: Exact Accuracy={}, Lenient Accuracy={}, Average Difference={}".format(test, perc_exact_accuracy, perc_lenient_accuracy, avg_differences)
-    text_output(output_string, "Logs", save_dir, features)
+    
+    text_output(output_string, "{}_Logs".format(folder), save_dir, features)
 
     return exact_accuracy, lenient_accuracy
 
 
 
-def evalTest(procedure, test_index):
+def evalTest(procedure, test_index, return_dict, data_set_dir, save_dir, features):
     #performance variable for combined data sets
     differences = []
     exact_acc = 0
@@ -93,6 +94,8 @@ def evalTest(procedure, test_index):
             test.append(procedure[key][test_index])
     test_string = ", ".join([str(item) for item in test])
 
+    os.mkdir(os.path.join(save_dir, str(test)))
+    save_dir = os.path.join(save_dir, str(test))
 
     for folder in os.listdir(data_set_dir): # for each training-test set pair available
         for data_file in glob.glob(os.path.join(data_set_dir,folder,"TestSet*")):
@@ -130,31 +133,27 @@ def evalTest(procedure, test_index):
 
         #Being testing
         try: 
-            e, l = trainSVC(test, training_data, training_categories, test_data, test_categories, differences)
+            e, l = trainSVC(test, training_data, training_categories, test_data, test_categories, differences, save_dir, features, folder)
             exact_acc += e
             len_acc += l
             #TODO Calc differences form Differences list
 
         except Exception as err:
             print("failed with {}".format(err))
-            for item in training_data:
-                print(item[0])
 
-    avg_exact_acc = exact_acc / len(os.listdir(data_set_dir))
-    avg_len_acc = len_acc / len(os.listdir(data_set_dir))
+    
+
+    avg_perc_exact_acc = exact_acc / len(differences) * 100
+    avg_perc_len_acc = len_acc / len(differences) * 100
     avg_diffs = sum(differences) / len(differences)
 
-    perc_exact_acc = avg_exact_acc / len(differences)
-    perc_len_acc = avg_len_acc / len(differences)
-
-    output_string = "\n Test {}: Exact Accuracy={}, Lenient Accuracy={}, Average Difference={}".format(test, perc_exact_acc, perc_len_acc, avg_diffs)
-    print(output_string[2:])
+    output_string = "\nTest {}: Exact Accuracy={}, Lenient Accuracy={}, Average Difference={}".format(test, avg_perc_exact_acc, avg_perc_len_acc, avg_diffs)
+    print(output_string[1:])
         
-    text_output(output_string, "Accuracy", save_dir, features)
+    #text_output(output_string, "Accuracy", save_dir, features)
 
+    return_dict[test_index] = [avg_perc_exact_acc, avg_perc_len_acc, avg_diffs, test_string]
 
-
-    return avg_exact_acc, avg_len_acc, avg_diffs, test_string
 
 if __name__ == '__main__':
     start = time.time()
@@ -201,29 +200,31 @@ if __name__ == '__main__':
     features = list(pickle.load( open( os.path.join(data_set_dir, default_path), "rb" )).keys())
     print("Estimating with features {}".format(features))
     procedure = test_order(features[1:])
-
-
-
+    results = {}
 
     threads = []
-    return_dict = manager.dict()
-    while len(threads) >= 10:
-                            for thread in threads:
-                                if not thread.is_alive():   
-                                    threads.remove(thread)
+    manager = multiprocessing.Manager()
+    return_dict = manager.dict()    
 
-    p1 = multiprocessing.Process(target=evalTest, args=(procedure, test_index, return_dict))
-                        threads.append(p1)
-                        p1.start()
-
-    results = {}
-    avg_exact_acc = 0
-    avg_len_acc = 0 
-    avg_diffs = 0
+    stats = {}
     for test_index in range(len(list(procedure.values())[0])-1): # for each test in list
-        avg_exact_acc, avg_len_acc, avg_diffs, test_string = evalTest(procedure, test_index, return_dict)
+        while len(threads) >= 10:
+            for thread in threads:
+                if not thread.is_alive():   
+                    threads.remove(thread)
+                    # Return and save each feature from the video using a thread-safe dictionary 
+                    for key,value in return_dict.items():
+                        if not key in stats.keys():
+                            stats[key] = []
+                        stats[key].append(value) 
+                        del return_dict[key]
 
-        results[test_string] = [avg_exact_acc, avg_len_acc, avg_diffs]
+        p1 = multiprocessing.Process(target=evalTest, args=(procedure, test_index, return_dict, data_set_dir, save_dir, features))
+        threads.append(p1)
+        p1.start()
+        
+    for key, value in stats.items():
+        results[value[3]] = value[:3] 
     
     sorted_results = collections.OrderedDict(sorted(results.items(), key=lambda x: x[1]))
     for key,value in sorted_results.items():
