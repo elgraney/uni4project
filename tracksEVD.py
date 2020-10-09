@@ -87,7 +87,10 @@ def processVideo(file, load_folder, return_dict, debugging = False):
         mean.append(statistics.mean(magnitudes))
         sd.append(statistics.pstdev(magnitudes))
         val_range.append(max(magnitudes)-min(magnitudes))
-        rel_sd.append(sd[-1]/val_range[-1])
+        if val_range[-1] != 0:
+            rel_sd.append(sd[-1]/val_range[-1])
+        else:
+            rel_sd.append(0)
         most_change.append(max(magnitudes))
 
         average_direction.append(statistics.mean(angles))
