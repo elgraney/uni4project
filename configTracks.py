@@ -16,7 +16,7 @@ path = "python tracksOpticalFlow.py tracks Frames False"
 os.system(path)
 path = "python tracksEVD.py tracks"
 os.system(path)
-path = "python estimation.py tracks tracksPoints"
+path = "python estimationV2.py tracks tracksPoints"
 os.system(path)
 path = "python featurePerformanceStats.py tracksPoints"
 os.system(path)

@@ -186,6 +186,7 @@ if __name__ == '__main__':
                     save_dir = new_save_dir
                 print("Saving in folder", save_dir)
                 os.mkdir(save_dir)
+                os.mkdir(os.path.join(save_dir,"Tests"))
             except IOError:
                 print(sys.argv[2])
                 raise Exception("Bad argument; argument 2")
@@ -219,12 +220,19 @@ if __name__ == '__main__':
                         stats[key].append(value) 
                         del return_dict[key]
 
-        p1 = multiprocessing.Process(target=evalTest, args=(procedure, test_index, return_dict, data_set_dir, save_dir, features))
+        p1 = multiprocessing.Process(target=evalTest, args=(procedure, test_index, return_dict, data_set_dir, os.path.join(save_dir,"Tests"), features))
         threads.append(p1)
         p1.start()
-        
+
+      
+    for thread in threads:
+        thread.join()
+
+
     for key, value in stats.items():
-        results[value[3]] = value[:3] 
+        print(key, value)
+        results[value[0][3]] = value[0][:3] 
+
     
     sorted_results = collections.OrderedDict(sorted(results.items(), key=lambda x: x[1]))
     for key,value in sorted_results.items():
