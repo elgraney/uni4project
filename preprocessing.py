@@ -153,9 +153,23 @@ def cleanid(filename):
     return filename
 
 
-if __name__ == "__main__":
-    start = time.time()
-    ratio = 4/3
+def inputs():
+    if len(sys.argv) > 1:
+        try:
+            input_string = str(sys.argv[1]).split()
+            ratio1 = input_string[0]
+            ratio2 = input_string[1]
+            ratio = ratio1+"/"+ratio2
+            width = str(sys.argv[2])
+            interval = str(sys.argv[3])
+            remainder = str(sys.argv[4])
+            frame_rate = str(sys.argv[5])
+            focus = str(sys.argv[6])
+            replace = str(sys.argv[7])
+        except:
+            print("Error in input string: using default settings")
+
+    ratio = "4/3"
     width = 500
     interval = 5
     remainder = 3
@@ -163,19 +177,22 @@ if __name__ == "__main__":
     focus = ["C"]
     replace = False
 
-    ratio = eval(sys.argv[1])
-    width = eval(sys.argv[2])
-    interval = eval(sys.argv[3])
-    remainder = eval(sys.argv[4])
-    frame_rate = eval(sys.argv[5])
-    if sys.argv[6].lower() == "full":
-        focus = ["C", "TL", "BR"]
-    if sys.argv[7].lower() == "true":
-        replace = True
+    return ratio, width, interval, remainder, frame_rate, focus, replace
+
+    
+if __name__ == "__main__":
+    start = time.time()
+
+    ratio, width, interval, remainder, frame_rate, focus, replace = inputs()
 
     # Program processes all videos in directory folder
     directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "wind footage")
-    save_directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Frames")
+    ratio_split = ratio.split("/")
+    save_directory = os.path.join(os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Frames"), "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)),str(replace)))
+    ratio = eval(ratio)
+    
+    if not os.path.exists(save_directory):
+        os.mkdir(save_directory)
 
     total_videos = 0
     for folder in os.listdir(directory):
@@ -191,6 +208,7 @@ if __name__ == "__main__":
         if not "bin" in folder and not "stablise" in folder and not "TODO" in folder: 
             current_path = os.path.join(directory,folder)
             for filename in os.listdir(current_path):
+                
                 try:
                     filename_string = cleanid(filename)
 
@@ -203,8 +221,10 @@ if __name__ == "__main__":
                         continue
                     
                     print("Processing", filename)
+                    print(save_path)
+                    
                     os.mkdir(save_path)
-
+                    
                     for focus_point in focus:
                         while len(threads) >= 10:
                             for thread in threads:
