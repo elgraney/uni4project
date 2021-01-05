@@ -51,6 +51,15 @@ def calculateMagnitudes(vectors):
     sorted_magnitudes = sorted(magnitudes)
     return sorted_magnitudes, angles
 
+@numba.jit(nopython=True)
+def calculateVectors(track):
+    x_vectors = numba.typed.List()
+    y_vectors = numba.typed.List() 
+    for index in range(len(track)-1):
+        x_vectors.append(track[index+1][0] - track[index][0])
+        y_vectors.append(track[index+1][1] - track[index][1])
+    return x_vectors, y_vectors
+
 
 @numba.jit(nopython=True)
 def calculateRelatives( dif_fm_mean, dif_fm_sd, average_flow):
@@ -64,8 +73,9 @@ def calculateRelatives( dif_fm_mean, dif_fm_sd, average_flow):
         
 
 
-def processVideo(file_name, load_directory, return_dict, relative = False,):
-    flow_list = pickle.load( open( os.path.join(load_directory, file_name), "rb" ))
+def processVideo(folder_name, load_directory, return_dict, relative = False,):
+    flow_list = pickle.load( open( os.path.join(load_directory, folder_name, "Frames"), "rb" ))
+    tracks_list = pickle.load( open( os.path.join(load_directory, folder_name, "Tracks"), "rb" ))
 
     mean_list = []
 
@@ -77,10 +87,10 @@ def processVideo(file_name, load_directory, return_dict, relative = False,):
     dif_fm_mean_dir_abs = []
     dif_fm_sd_dir_abs = []
 
-    if len(file_name.split("."))> 1:
-        name = file_name.split(".")
+    if len(folder_name.split("."))> 1:
+        name = folder_name.split(".")
     else:
-        name = file_name
+        name = folder_name
 
     
     len_flow_list0 = len(flow_list[0])
@@ -113,9 +123,16 @@ def processVideo(file_name, load_directory, return_dict, relative = False,):
             mean_direction.append(statistics.mean(angles))
             direction_sd.append(statistics.pstdev(angles))
     
-       
-    # For each max frame difference calculate the distance relative to mean of whole video
+    track_means = []
+    for track in tracks_list:
+        track_vectorsx, track_vectorsy = calculateVectors(track)
+        #...
+        #steal from the tracks EVD py file
+        #There must be something else, right?
+
+
     average_flow = mean_feature(mean_list)
+
     
 
     #Removed from max in V3
@@ -144,7 +161,7 @@ def evalSet(opflow_directory):
     return_dict = manager.dict()
     for scene in os.listdir(opflow_directory):
         load_directory = os.path.join(opflow_directory, scene)
-        for file_name in os.listdir(load_directory):
+        for folder_name in os.listdir(load_directory):
             while len(threads) >= constants.THREADS:
                 for thread in threads:
                     if not thread.is_alive():
@@ -157,7 +174,7 @@ def evalSet(opflow_directory):
                                 set_results[feat_key].append(feat_val) 
                             del return_dict[key]
 
-            p = multiprocessing.Process(target=processVideo, args=(file_name, load_directory, return_dict))
+            p = multiprocessing.Process(target=processVideo, args=(folder_name, load_directory, return_dict))
             threads.append(p)
             p.start()
 
@@ -182,10 +199,23 @@ def evalSet(opflow_directory):
     return set_results
         
 
+def inputs():
+    if len(sys.argv) > 1:
+        try:
+            preprocessing_code = sys.argv[1]
+            opflow_code = str(sys.argv[2]).split()
+
+        except:
+            print("Error in input string: using default settings")
+    else:
+        preprocessing_code = "4_3_500_5_3_10_C_False"
+        opflow_code = "500_0.001_10_10_25_3"
+
+    return preprocessing_code, opflow_code
+
 
 if __name__ == '__main__':
 
-    flowtype = "DenseFlow"# dense
     relative = False    
     
     # PLACEHOLDER - inputs are preprocessing code and opflow code

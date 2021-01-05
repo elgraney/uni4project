@@ -13,6 +13,7 @@ from sklearn import svm
 import constants
 import evaluation
 import commonFunctions
+import machineLearning
 
 # This file handles the creation of a classifier and the assessment of its performance and the performance of each of the training features
 def test_order(features):
@@ -116,6 +117,8 @@ if __name__ == '__main__':
     data_set_dir = "V:\\Uni4\\SoloProject\\DataSets\\4_3_500_5_3_10_C_False_500_0.001_10_10_25_3\\2"
     data = pickle.load( open( data_set_dir, "rb") )
 
+    data = machineLearning.standard_scale(data)
+
     
     training_set, test_set = commonFunctions.split_data_set(data)
 
@@ -150,8 +153,8 @@ if __name__ == '__main__':
         #results[test_id]["differences_distribution"] = evaluation.plot_differences_distribution(test_output, test_save_dir)
         #results[test_id]["wind_force_differences_distribution"] = evaluation.plot_differences_by_wind_force(test_output, test_save_dir)
 
-    output_logs(test_output, test_save_dir)
-    output_stats(results[test_id], test_save_dir)
+        output_logs(test_output, test_save_dir)
+        output_stats(results[test_id], test_save_dir)
 
 
     

@@ -59,7 +59,7 @@ def exact_accuracy(test_output):
         if item["estimate"] == item["actual"]:
             total += 1
     
-    return total / len(test_output)
+    return total / len(test_output) *100
 
 
 def lenient_accuracy(test_output):
@@ -69,7 +69,7 @@ def lenient_accuracy(test_output):
         if difference<=1:
             total +=1
     
-    return total / len(test_output)
+    return total / len(test_output) * 100
 
 
 def average_difference(test_output):

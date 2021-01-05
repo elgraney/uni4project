@@ -168,14 +168,15 @@ def inputs():
             replace = str(sys.argv[7])
         except:
             print("Error in input string: using default settings")
+    else:
 
-    ratio = "4/3"
-    width = 500
-    interval = 5
-    remainder = 3
-    frame_rate = 10
-    focus = ["C"]
-    replace = False
+        ratio = "4/3"
+        width = 500
+        interval = 5
+        remainder = 3
+        frame_rate = 10
+        focus = ["C"]
+        replace = False
 
     return ratio, width, interval, remainder, frame_rate, focus, replace
 

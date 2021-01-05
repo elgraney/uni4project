@@ -6,6 +6,7 @@ import pickle
 import sys
 import shutil
 import time
+import commonFunctions
 
 
 
@@ -76,20 +77,41 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
             framewise_tracks[index+track_index-1][int(x)][int(y)] = [dx, dy]
 
     # TODO: How do I test this is working correctly?
-  
-    with open(os.path.join(flow_folder, "TF_"+subscene), 'wb') as fp:   
+    commonFunctions.makedir(os.path.join(flow_folder, subscene))
+    with open(os.path.join(flow_folder, subscene, "Frames"), 'wb') as fp:   
         pickle.dump(framewise_tracks, fp)
+    with open(os.path.join(flow_folder, subscene, "Tracks"), 'wb') as fp:   
+        pickle.dump(complete_tracks, fp)
     #print(time.time()-start)
 
 
 def inputs():
-    if len(sys.argv) > 2:
+    if len(sys.argv) > 1:
         try:
-            var1 = sys.argv[2]
+            preprocessing_code = sys.argv[1]
+            opflow_code = str(sys.argv[2]).split()
+            replace = sys.argv[3]
+            maxCorners = opflow_code[0]
+            qualityLevel = opflow_code[1]
+            minDistance = opflow_code[2]
+            blockSize = opflow_code[3]
+            winSize = opflow_code[4]
+            maxLevel = opflow_code[5]
+
         except:
             print("Error in input string: using default settings")
-    # vars
-    return
+    else:
+        preprocessing_code = "4_3_500_5_3_10_C_False"
+        opflow_code = "500_0.001_10_10_25_3"
+        maxCorners = 500
+        qualityLevel = 0.001
+        minDistance = 10
+        blockSize = 10
+        winSize = 25
+        maxLevel = 3
+        replace = False
+
+    return preprocessing_code, opflow_code, replace, maxCorners, qualityLevel, minDistance, blockSize, winSize, maxLevel
 
 
 
@@ -99,25 +121,20 @@ if __name__ == "__main__":
     #TODO input string of preprocessing args
     # Hardcoded:
     preprocessing_code = "4_3_500_5_3_10_C_False"
+    preprocessing_code, opflow_code, replace, maxCorners, qualityLevel, minDistance, blockSize, winSize, maxLevel = inputs()
 
     # params for ShiTomasi corner detection
-    feature_params = dict( maxCorners = 500,
-                        qualityLevel = 0.001,
-                        minDistance = 10,
-                        blockSize = 10 )
+    feature_params = dict( maxCorners = maxCorners,
+                        qualityLevel = qualityLevel,
+                        minDistance = minDistance,
+                        blockSize = blockSize )
     # Parameters for lucas kanade optical flow
-    lk_params = dict( winSize  = (25,25),
-                    maxLevel = 3,
+    lk_params = dict( winSize  = (winSize,winSize),
+                    maxLevel = maxLevel,
                     criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
    
-    opflow_code = "{}_{}_{}_{}_{}_{}".format(str(feature_params["maxCorners"]),
-                                            str(feature_params["qualityLevel"]), 
-                                            str(feature_params["minDistance"]), 
-                                            str(feature_params["blockSize"]), 
-                                            str(lk_params["winSize"][0]), 
-                                            str(lk_params["maxLevel"]))
 
-    replace = True
+  
 
     load_directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Frames", preprocessing_code)
 
