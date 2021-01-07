@@ -13,11 +13,22 @@ import pickle
 import bisect 
 import numba 
 import constants
+from scipy.signal import savgol_filter
 
 # This file handles the creation of the training and test sets for Experiment 5
 
 def mean_feature(data):
-    return statistics.mean(data)
+    if data:
+        return statistics.mean(data)
+    else:
+        return None # NOTE: not sure if None works, might have to do alternative method like skip this one
+
+
+def sd_feature(data):
+    if data:
+        return statistics.pstdev(data)
+    else:
+        return None # NOTE: not sure if None works, might have to do alternative method like skip this one
 
 @numba.jit(nopython=True)
 def upper_feature(data):
@@ -70,29 +81,23 @@ def calculateRelatives( dif_fm_mean, dif_fm_sd, average_flow):
         for item in dif_fm_sd:
             rel_dif_fm_sd.append(item / average_flow)
         return rel_dif_fm_mean, rel_dif_fm_sd
+
+
+@numba.jit(nopython=True)
+def angleDifference(angles):
+    diffs = numba.typed.List()
+    for index in range(len(angles)-1):
         
+        diffs.append(np.pi - abs(abs(angles[index+1] - angles[index]) - np.pi))
+    return diffs
 
 
-def processVideo(folder_name, load_directory, return_dict, relative = False,):
-    flow_list = pickle.load( open( os.path.join(load_directory, folder_name, "Frames"), "rb" ))
-    tracks_list = pickle.load( open( os.path.join(load_directory, folder_name, "Tracks"), "rb" ))
-
+def frame_features(flow_list):
     mean_list = []
 
-    mean_direction = []
     direction_sd = []
     sd_list = []
-    dif_fm_mean = numba.typed.List()
-    dif_fm_sd = numba.typed.List()
-    dif_fm_mean_dir_abs = []
-    dif_fm_sd_dir_abs = []
 
-    if len(folder_name.split("."))> 1:
-        name = folder_name.split(".")
-    else:
-        name = folder_name
-
-    
     len_flow_list0 = len(flow_list[0])
     len_flow_list00 = len(flow_list[0][0])
     
@@ -112,6 +117,7 @@ def processVideo(folder_name, load_directory, return_dict, relative = False,):
         except Exception as err:
             print(err)
             print(frame_index)
+            continue
     
 
         frame_mean = statistics.mean(magnitudes)
@@ -120,31 +126,95 @@ def processVideo(folder_name, load_directory, return_dict, relative = False,):
         sd_list.append(statistics.pstdev(magnitudes)) # sd of all flow
 
         if len(angles)>0:
-            mean_direction.append(statistics.mean(angles))
             direction_sd.append(statistics.pstdev(angles))
-    
+            
+    return mean_list, direction_sd, sd_list
+
+
+
+def tracks_features(tracks_list):
     track_means = []
+    track_sds = []
+    angle_consistency = []
+    angle_range = []
+    oscillation_rate = []
+    oscillation_consistency = []
+
+
     for track in tracks_list:
-        track_vectorsx, track_vectorsy = calculateVectors(track)
-        #...
-        #steal from the tracks EVD py file
-        #There must be something else, right?
+        track_proper = track[1:]
+        if not len(track_proper)>1:
+            continue
+        track_vectorsx, track_vectorsy = calculateVectors(np.array(track_proper))
+        track_vectors = list(zip(track_vectorsx, track_vectorsy))
+        
+        track_vectors = [list(x) for x in track_vectors]
+
+        magnitudes, angles = calculateMagnitudes(np.array(track_vectors))
+
+        angle_differences = angleDifference(angles)
+        angle_consistency_addition = mean_feature(angle_differences)
+        if angle_consistency_addition:
+            angle_consistency.append(angle_consistency_addition)
+        angle_range_addition = sd_feature(angle_differences)
+        if angle_range_addition:
+            angle_range.append(angle_range_addition)
+
+        # TODO Need some way of intelligently identifying turning points
+        # use np.convolve() to smooth angles
+        # Find the greatest turn - an area with the angles either side less than or equal to it.
+        
+        if len(angle_differences) > 5:
+            
+            smoothed_range = savgol_filter(angle_differences, 5,3)
+        else:
+            smoothed_range = angle_differences
+
+        turning_points = []
+        for index in range(1, len(smoothed_range)-1):
+            if smoothed_range[index] >= smoothed_range[index-1] and smoothed_range[index] >= smoothed_range[index+1]:
+                #this is a maximum turn point
+                if smoothed_range[index] > np.pi/5: # set the min criteria for a turning point to pi/5
+                    turning_points.append(index)
+        
+        oscillation_rate_addition = mean_feature(list(np.diff(turning_points)))
+        if oscillation_rate_addition:
+            oscillation_rate.append(oscillation_rate_addition)
+        oscillation_consistency_addition = sd_feature(list(np.diff(turning_points)))
+        if oscillation_consistency_addition:
+            oscillation_consistency.append(oscillation_consistency_addition)
+
+        track_means.append(mean_feature(magnitudes))
+        track_sds.append(sd_feature(magnitudes))
+
+    return track_means, track_sds, angle_consistency, angle_range, oscillation_rate, oscillation_consistency
 
 
-    average_flow = mean_feature(mean_list)
+def processVideo(folder_name, load_directory, return_dict, relative = False,):
+    flow_list = pickle.load( open( os.path.join(load_directory, folder_name, "Frames"), "rb" ))
+    tracks_list = pickle.load( open( os.path.join(load_directory, folder_name, "Tracks"), "rb" ))
 
+    if len(folder_name.split("."))> 1:
+        name = folder_name.split(".")
+    else:
+        name = folder_name
+
+    mean_list, direction_sd, sd_list = frame_features(flow_list)
+    track_means, track_sds, angle_consistency, angle_range, oscillation_rate, oscillation_consistency = tracks_features(tracks_list)
     
-
-    #Removed from max in V3
+    #NOTE: these feats are combined in a bad way! averaging removes significant trends! FIND A BETTER WAY!
     video_windspeed = name.split("-")[-1]
     video_features = {} 
     video_features["category"] = video_windspeed # TODO extend to metadata and make list of all metadata aspects like environement, etc
-    video_features["mean"] = average_flow
+    video_features["mean"] = mean_feature(mean_list)
     video_features["sd"] = mean_feature(sd_list) #best
-    video_features["mean_direction"] = mean_feature(mean_direction) 
     video_features["direction_sd"] = mean_feature(direction_sd)
-
-
+    video_features["track_means"] = mean_feature(track_means)
+    video_features["track_sds"] = mean_feature(track_sds) 
+    video_features["angle_consistency"] = mean_feature(angle_consistency) 
+    video_features["angle_range"] = mean_feature(angle_range)
+    video_features["oscillation_rate"] = mean_feature(oscillation_rate) 
+    video_features["oscillation_consistency"] = mean_feature(oscillation_consistency) 
     return_dict[name] = video_features
 
 
