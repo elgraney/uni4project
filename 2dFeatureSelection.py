@@ -14,21 +14,30 @@ import bisect
 import numba 
 import constants
 from scipy.signal import savgol_filter
+import commonFunctions
 
 # This file handles the creation of the training and test sets for Experiment 5
+@numba.jit(nopython=True)
+def mean_feat_nopython(data):
+    return np.mean(data)
+
 
 def mean_feature(data):
     if data:
-        return statistics.mean(data)
+        return mean_feat_nopython(np.array(data))
     else:
-        return None # NOTE: not sure if None works, might have to do alternative method like skip this one
+        return 0 # NOTE: using 0 is bad! Find an alternative
+
+
+def sd_feat_nopython(data):
+    return np.std(data)
 
 
 def sd_feature(data):
     if data:
-        return statistics.pstdev(data)
+        return sd_feat_nopython(np.array(data))
     else:
-        return None # NOTE: not sure if None works, might have to do alternative method like skip this one
+        return 0 # NOTE: using 0 is bad! Find an alternative
 
 @numba.jit(nopython=True)
 def upper_feature(data):
@@ -61,6 +70,7 @@ def calculateMagnitudes(vectors):
             
     sorted_magnitudes = sorted(magnitudes)
     return sorted_magnitudes, angles
+
 
 @numba.jit(nopython=True)
 def calculateVectors(track):
@@ -103,30 +113,24 @@ def frame_features(flow_list):
     
     for frame_index in range(len(flow_list)):
         #get optical flow from 2 frames and save changes in magnitudes
-
         pure_vector_list = numba.typed.List()
-        
 
         for x in range(len_flow_list0):
             for y in range(len_flow_list00):
                 if flow_list[frame_index][x][y]:
                     pure_vector_list.append(np.array(flow_list[frame_index][x][y]))
-
         try:
             magnitudes, angles = calculateMagnitudes(pure_vector_list)
-        except Exception as err:
-            print(err)
-            print(frame_index)
+        except:
             continue
     
-
-        frame_mean = statistics.mean(magnitudes)
+        frame_mean = mean_feature(magnitudes)
         mean_list.append(frame_mean) # mean of whole flow
         
-        sd_list.append(statistics.pstdev(magnitudes)) # sd of all flow
+        sd_list.append(sd_feature(magnitudes)) # sd of all flow
 
         if len(angles)>0:
-            direction_sd.append(statistics.pstdev(angles))
+            direction_sd.append(sd_feature(angles))
             
     return mean_list, direction_sd, sd_list
 
@@ -140,17 +144,17 @@ def tracks_features(tracks_list):
     oscillation_rate = []
     oscillation_consistency = []
 
-
     for track in tracks_list:
         track_proper = track[1:]
         if not len(track_proper)>1:
             continue
         track_vectorsx, track_vectorsy = calculateVectors(np.array(track_proper))
         track_vectors = list(zip(track_vectorsx, track_vectorsy))
-        
-        track_vectors = [list(x) for x in track_vectors]
 
+        track_vectors = [list(x) for x in track_vectors]
+        
         magnitudes, angles = calculateMagnitudes(np.array(track_vectors))
+        
 
         angle_differences = angleDifference(angles)
         angle_consistency_addition = mean_feature(angle_differences)
@@ -161,8 +165,6 @@ def tracks_features(tracks_list):
             angle_range.append(angle_range_addition)
 
         # TODO Need some way of intelligently identifying turning points
-        # use np.convolve() to smooth angles
-        # Find the greatest turn - an area with the angles either side less than or equal to it.
         
         if len(angle_differences) > 5:
             
@@ -177,13 +179,14 @@ def tracks_features(tracks_list):
                 if smoothed_range[index] > np.pi/5: # set the min criteria for a turning point to pi/5
                     turning_points.append(index)
         
-        oscillation_rate_addition = mean_feature(list(np.diff(turning_points)))
-        if oscillation_rate_addition:
-            oscillation_rate.append(oscillation_rate_addition)
-        oscillation_consistency_addition = sd_feature(list(np.diff(turning_points)))
-        if oscillation_consistency_addition:
-            oscillation_consistency.append(oscillation_consistency_addition)
-
+        if turning_points:
+            oscillation_rate_addition = mean_feature(list(np.diff(turning_points)))
+            if oscillation_rate_addition:
+                oscillation_rate.append(oscillation_rate_addition)
+            oscillation_consistency_addition = sd_feature(list(np.diff(turning_points)))
+            if oscillation_consistency_addition:
+                oscillation_consistency.append(oscillation_consistency_addition)
+        
         track_means.append(mean_feature(magnitudes))
         track_sds.append(sd_feature(magnitudes))
 
@@ -191,8 +194,12 @@ def tracks_features(tracks_list):
 
 
 def processVideo(folder_name, load_directory, return_dict, relative = False,):
-    flow_list = pickle.load( open( os.path.join(load_directory, folder_name, "Frames"), "rb" ))
-    tracks_list = pickle.load( open( os.path.join(load_directory, folder_name, "Tracks"), "rb" ))
+    try:
+        flow_list = pickle.load( open( os.path.join(load_directory, folder_name, "Frames"), "rb" ))
+        tracks_list = pickle.load( open( os.path.join(load_directory, folder_name, "Tracks"), "rb" ))
+    except:
+        print("failed to load file {}".format(os.path.join(load_directory, folder_name)))
+        return
 
     if len(folder_name.split("."))> 1:
         name = folder_name.split(".")
@@ -269,42 +276,22 @@ def evalSet(opflow_directory):
     return set_results
         
 
-def inputs():
-    if len(sys.argv) > 1:
-        try:
-            preprocessing_code = sys.argv[1]
-            opflow_code = str(sys.argv[2]).split()
-
-        except:
-            print("Error in input string: using default settings")
-    else:
-        preprocessing_code = "4_3_500_5_3_10_C_False"
-        opflow_code = "500_0.001_10_10_25_3"
-
-    return preprocessing_code, opflow_code
-
 
 if __name__ == '__main__':
-
-    relative = False    
-    
-    # PLACEHOLDER - inputs are preprocessing code and opflow code
-    preprocessing_code = "4_3_500_5_3_10_C_False"
-    opflow_code = "500_0.001_10_10_25_3"
-
-
     start = time.time()
+
+    preprocessing_code, opflow_code, filename = commonFunctions.code_inputs(sys.argv)
+    
     
     load_directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "OpticalFlow", preprocessing_code, opflow_code)
     save_directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", preprocessing_code + "_" + opflow_code)
-            
 
     features = evalSet(load_directory)
 
     if not os.path.exists(save_directory):
         os.mkdir(save_directory)
     print("\n\nSaving")
-    with open(os.path.join(save_directory, "2"), 'wb') as out:
+    with open(os.path.join(save_directory, filename), 'wb') as out:
         pickle.dump(features, out)
 
 
@@ -314,3 +301,6 @@ if __name__ == '__main__':
     print("threading global averages time:")
     print(str(end - start))
 
+
+    #CURRENT RUN TIME APPROX 10182 (10 threads)
+    #Approx same with nopython mean. Try same with sd.

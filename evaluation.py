@@ -28,10 +28,21 @@ def test_order(features):
     return feature_dict
 
 
-def feature_search(model, test_data):
+def test_ranking(load_dir):
     # Feature search takes place in the model selection phase and the best 10 or so models are saved. 
     # So delete this
-    pass
+    exact_stats = {}
+    lenient_stats = {}
+    for test in os.listdir(load_dir):
+        with open(os.path.join(load_dir, test, "Statistics.txt")) as stats_file:
+            file_id = test
+            exact_stats[file_id] = stats_file.readline().split(" ")[1]
+            lenient_stats[file_id] = stats_file.readline().split(" ")[1]
+
+    lenient_stats = dict(sorted(lenient_stats.items(), key=lambda item: item[1]))
+    print(lenient_stats)
+    return
+    # TODO NEEDS A WHOLE LOT OF WORK!
 
 
 def test(model, test_data, test_categories):

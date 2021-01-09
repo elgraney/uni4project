@@ -23,6 +23,7 @@ def clear_dict_items(dictionary):
         dictionary[key] = []
     return dictionary 
 
+
 def split_data_set(data): 
     
     indices_by_force = [[] for x in range(13)] 
@@ -31,7 +32,6 @@ def split_data_set(data):
             indices_by_force[int(data[constants.feature0][index])].append(index)
         except:
             print("bad id: " + data[constants.feature0][index])
-    
 
     training_data = clear_dict_items(data.copy())
     test_data = clear_dict_items(data.copy())
@@ -47,3 +47,20 @@ def split_data_set(data):
             training_data[feature] += [data[feature][index] for index in lst[test_partition:]]
     
     return training_data, test_data #,validation_data
+
+
+def code_inputs(sys_args):
+    if len(sys_args) > 1:
+        try:
+            preprocessing_code = sys_args[1]
+            opflow_code = str(sys_args[2]).split()
+            filename = str(sys_args[3])
+
+        except:
+            print("Error in input string: using default settings")
+    else:
+        preprocessing_code = "4_3_500_5_3_10_C_False"
+        opflow_code = "500_0.001_10_10_25_3"
+        filename = "default"
+
+    return preprocessing_code, opflow_code, filename

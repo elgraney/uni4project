@@ -89,7 +89,7 @@ def output_stats(test_results, save_dir):
 if __name__ == '__main__':
     start = time.time()
 
-    save_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Outputs", "Unique Code")
+    save_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Outputs", "Baseline")
     commonFunctions.makedir(save_dir)
 
     data_set_dir = "V:\\Uni4\\SoloProject\\DataSets\\4_3_500_5_3_10_C_False_500_0.001_10_10_25_3\\2" # temp hard-coded

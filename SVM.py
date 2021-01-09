@@ -95,6 +95,7 @@ def output_stats(test_results, save_dir):
 
 
 
+
 # TODO make neat and incorporate evaluation.py
 # allow param input
 # How to save a model?
@@ -111,11 +112,15 @@ def output_stats(test_results, save_dir):
 if __name__ == '__main__':
     start = time.time()
 
-    save_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Outputs", "Unique Code")
-    commonFunctions.makedir(save_dir)
+    preprocessing_code, opflow_code, filename = commonFunctions.code_inputs(sys.argv)
+    joined_code = preprocessing_code + "_"  + opflow_code
 
-    data_set_dir = "V:\\Uni4\\SoloProject\\DataSets\\4_3_500_5_3_10_C_False_500_0.001_10_10_25_3\\2"
-    data = pickle.load( open( data_set_dir, "rb") )
+    save_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Outputs", joined_code)
+    commonFunctions.makedir(save_dir)
+    commonFunctions.makedir(os.path.join(save_dir, "tests"))
+
+    load_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", joined_code, filename)
+    data = pickle.load( open( load_dir, "rb") )
 
     data = machineLearning.standard_scale(data)
 
@@ -131,7 +136,7 @@ if __name__ == '__main__':
     for test_index in range(len(list(procedure.values())[0])-1): # Each test
         test_bools = test_features(procedure, test_index)
         test_id = get_test_id(test_bools, features)
-        test_save_dir = os.path.join(save_dir, test_id)
+        test_save_dir = os.path.join(save_dir, "tests", test_id)
         commonFunctions.makedir(test_save_dir)
         results[test_id] = {}
 

@@ -159,6 +159,7 @@ def processVideo(file, load_folder, return_dict, debugging = False):
     
     return_dict[name] = video_features
 
+
 def evalSet(video_set, directory, flowtype, start_time):
     # Extract the features of each video in its own thread.
     # A maximum of 12 threads run at a time (for optimal performance on development platform) 
