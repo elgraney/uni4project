@@ -18,6 +18,7 @@ def text_output(text, name, path):
         result_file.write(text)
     result_file.close()
 
+
 def clear_dict_items(dictionary):
     for key in dictionary.keys():
         dictionary[key] = []

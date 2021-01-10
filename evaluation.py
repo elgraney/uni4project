@@ -40,7 +40,8 @@ def test_ranking(load_dir):
             lenient_stats[file_id] = stats_file.readline().split(" ")[1]
 
     lenient_stats = dict(sorted(lenient_stats.items(), key=lambda item: item[1]))
-    print(lenient_stats)
+    for key, value in lenient_stats.items():
+        print(key, value)
     return
     # TODO NEEDS A WHOLE LOT OF WORK!
 

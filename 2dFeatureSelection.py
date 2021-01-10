@@ -269,9 +269,6 @@ def evalSet(opflow_directory):
             for feat_key, feat_val in value.items():
                 set_results[feat_key].append(feat_val) 
             del return_dict[key]
-        
-    print(len(set_results))
-    print(len(set_results["category"]))
 
     return set_results
         
@@ -304,3 +301,4 @@ if __name__ == '__main__':
 
     #CURRENT RUN TIME APPROX 10182 (10 threads)
     #Approx same with nopython mean. Try same with sd.
+    #Reduced to 7543 with 10 threads and sd
