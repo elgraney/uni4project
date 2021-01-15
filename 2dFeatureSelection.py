@@ -72,14 +72,17 @@ def calculateMagnitudes(vectors):
     return sorted_magnitudes, angles
 
 
-@numba.jit(nopython=True)
-def calculateVectors(track):
+'''
+@numba.jit(nopython=True) 
+def calculateVectors(track): 
+    #DEPRICATED? If 2D Opflow is changed this must be removed too!
     x_vectors = numba.typed.List()
     y_vectors = numba.typed.List() 
     for index in range(len(track)-1):
         x_vectors.append(track[index+1][0] - track[index][0])
         y_vectors.append(track[index+1][1] - track[index][1])
     return x_vectors, y_vectors
+'''
 
 
 @numba.jit(nopython=True)
