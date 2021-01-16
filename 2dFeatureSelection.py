@@ -151,12 +151,11 @@ def tracks_features(tracks_list):
         track_proper = track[1:]
         if not len(track_proper)>1:
             continue
-        track_vectorsx, track_vectorsy = calculateVectors(np.array(track_proper))
-        track_vectors = list(zip(track_vectorsx, track_vectorsy))
-
-        track_vectors = [list(x) for x in track_vectors]
         
+        track_vectors = [list(x) for x in track_proper]
+
         magnitudes, angles = calculateMagnitudes(np.array(track_vectors))
+   
         
 
         angle_differences = angleDifference(angles)

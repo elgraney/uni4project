@@ -15,16 +15,19 @@ from scipy.ndimage import affine_transform
 
 # This file handles the calculation, formatting and saving of both dense and points frame wise optical flow
 
+
+
+
 def camera_motion_negation(prev_pts, curr_pts):
     #Find transformation matrix
     m = cv2.estimateAffine2D(prev_pts, curr_pts) 
-    
+
     transform = m[0]
-    inverse_padded_transform = np.vstack((cv2.invertAffineTransform(transform),np.array([0,0,1])))#invertAffineTransform outputs a 3x2 matrix: add [0,0,1] row to make 3x3.
+    inverse_padded_transform = np.vstack((cv2.invertAffineTransform(transform),np.array([0.,0.,1.])))#invertAffineTransform outputs a 3x2 matrix: add [0,0,1] row to make 3x3.
     return inverse_padded_transform
 
 
-#@numba.jit(nopython=True)
+@numba.jit(nopython=True)
 def calculate_vectors(track, inv_transforms):
     x_vectors = numba.typed.List()
     y_vectors = numba.typed.List() 
@@ -35,13 +38,14 @@ def calculate_vectors(track, inv_transforms):
     corrected_x_vectors = numba.typed.List()
     corrected_y_vectors = numba.typed.List()
     for x, y, transform in zip(x_vectors, y_vectors, inv_transforms):
-        vector = np.array([[x], [y], [0]])
-
-        res = np.dot(transform, vector) # does dot apply the inverse transform correctly?
+        
+        vector = np.array([x, y, 0.]).reshape(3,1)
+        res = np.dot(np.ascontiguousarray(transform), vector) # does dot apply the inverse transform correctly?
 
         corrected_x_vectors.append(res[0][0])
         corrected_y_vectors.append(res[1][0])
     return corrected_x_vectors, corrected_y_vectors
+
 
 
 def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
@@ -120,7 +124,6 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
             track_vectorsx, track_vectorsy = calculate_vectors(np.array(track[1:]), np.array(transforms[index:index+len(track)]))
             adjusted_track_vectors = list(zip(track_vectorsx, track_vectorsy))
             adjusted_track_vectors = [list(x) for x in adjusted_track_vectors]
-            #print(adjusted_track_vectors)
 
     # TODO: How do I test this is working correctly?
     commonFunctions.makedir(os.path.join(flow_folder, subscene))
@@ -157,7 +160,7 @@ def inputs():
         blockSize = 10
         winSize = 25
         maxLevel = 3
-        replace = False 
+        replace = False # MAKE FALSE AGAIN 
 
     return preprocessing_code, opflow_code, replace, maxCorners, qualityLevel, minDistance, blockSize, winSize, maxLevel
 
@@ -231,6 +234,6 @@ if __name__ == "__main__":
 
         current_folder +=1 
         if current_folder % round(total_folders/100) == 0:
-            print("Completed {} out of {} folders".format(current_folder, total_folders))
+            print("Completed {} out of {} folders in {} seconds, or {} minutes".format(current_folder, total_folders, time.time()-start, (time.time()-start)/60 ))
         
     print(time.time()-start)
