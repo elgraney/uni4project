@@ -9,6 +9,7 @@ import shutil
 import time
 import commonFunctions
 import numba
+from numba import vectorize
 from scipy.ndimage import affine_transform
 
 
@@ -28,23 +29,39 @@ def camera_motion_negation(prev_pts, curr_pts):
 
 
 @numba.jit(nopython=True)
-def calculate_vectors(track, inv_transforms):
-    x_vectors = numba.typed.List()
-    y_vectors = numba.typed.List() 
-    for index in range(len(track)-1):
-        x_vectors.append(track[index+1][0] - track[index][0])
-        y_vectors.append(track[index+1][1] - track[index][1])
-
     corrected_x_vectors = numba.typed.List()
     corrected_y_vectors = numba.typed.List()
-    for x, y, transform in zip(x_vectors, y_vectors, inv_transforms):
+def calculate_vectors(track_vectors, inv_transforms):
+
+    corrected_vectors = np.empty((len(track_vectors),2))
+    for (x, y), transform, index in zip(track_vectors, inv_transforms, range(len(track_vectors))):
         
         vector = np.array([x, y, 0.]).reshape(3,1)
         res = np.dot(np.ascontiguousarray(transform), vector) # does dot apply the inverse transform correctly?
+        corrected_vectors[index] = [res[0][0], res[1][0]]
+    return corrected_vectors
 
-        corrected_x_vectors.append(res[0][0])
-        corrected_y_vectors.append(res[1][0])
-    return corrected_x_vectors, corrected_y_vectors
+
+def minus_tracks(list1, list2):
+    return np.subtract(list1, list2)
+
+
+def format_track(track, framewise_tracks, transforms):
+    index = track[0]
+    list1 = np.array(track[2:])
+    list2 = np.array(track[1:-1])
+    difference_list = minus_tracks(list1, list2)
+    for vector_index in range(len(difference_list)):
+
+        x = difference_list[vector_index][0]
+
+        y = difference_list[vector_index][1]
+        framewise_tracks[index+vector_index][int(x)][int(y)] = [x, y]
+
+    # Tracks
+    track_vector = calculate_vectors(difference_list, np.array(transforms[index:index+len(track)]))
+
+    return framewise_tracks, track_vector
 
 
 
@@ -56,6 +73,12 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
     complete_tracks = []
     list_dir = os.listdir(frame_dir)
     len_list_dir = len(list_dir)
+
+    # params for ShiTomasi corner detection
+    camera_feature_params = dict( maxCorners = 20,
+                    qualityLevel = 0.01,
+                    minDistance = 20,
+                    blockSize = 3 )
 
     transforms = []
 
@@ -72,17 +95,20 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
             d = abs(p0-p0r).reshape(-1, 2).max(-1)
             good = d < 1 # keep points that are the same forward and back
 
-            transforms.append(camera_motion_negation(p0, p1)) # currently piggybacking on tracks points --> not ideal, switch to different selector
+            sp0 = cv2.goodFeaturesToTrack(frame_gray, **camera_feature_params)
+            sp1, _, _ = cv2.calcOpticalFlowPyrLK(img0, img1, sp0, None, **lk_params) # find new points
+
+            transforms.append(camera_motion_negation(sp0, sp1)) # currently piggybacking on tracks points --> not ideal, switch to different selector
 
             new_tracks = []
-            for tr, (x, y), good_flag in zip(tracks, p1.reshape(-1, 2), good):
+            for tr,(x,y), good_flag in zip(tracks, p1.reshape(-1, 2), good):
                 if not good_flag: #track has ended
                     complete_tracks.append(tr)
                     continue # skip points that aren't the same both ways
                 if x > frame.shape[1] or y > frame.shape[0]:
                     complete_tracks.append(tr)
                     continue # end tracks that go beyond the resolution
-                tr.append((x, y))
+                tr.append(np.array([x, y]))
                 new_tracks.append(tr)
                 if (index == len_list_dir-2): #last frame
                     complete_tracks.append(tr)
@@ -107,33 +133,21 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
     height, width, _ = frame.shape 
 
     framewise_tracks = [[[None for k in range(height)] for j in range(width)] for i in range(len_list_dir-2)] # [index][x][y]
+    framewise_tracks = np.full((len_list_dir-2, width, height, 2), np.nan)
 
     for track in complete_tracks:
-        if len(track) < 2:
-            continue
-        index = track[0]
-        
-        for track_index in range(1, len(track)-1):
-            # Frames
-            x = track[track_index][0]
-            y = track[track_index][1]
-            dx, dy = track[track_index+1][0]-x, track[track_index+1][1]-y
-            framewise_tracks[index+track_index-1][int(x)][int(y)] = [dx, dy]
+        if len(track) > 2:
+            framewise_tracks, adjusted_track_vectors = format_track(track, framewise_tracks, transforms)
 
-            # Tracks
-            track_vectorsx, track_vectorsy = calculate_vectors(np.array(track[1:]), np.array(transforms[index:index+len(track)]))
-            adjusted_track_vectors = list(zip(track_vectorsx, track_vectorsy))
-            adjusted_track_vectors = [list(x) for x in adjusted_track_vectors]
 
     # TODO: How do I test this is working correctly?
     commonFunctions.makedir(os.path.join(flow_folder, subscene))
-    '''
+    
     with open(os.path.join(flow_folder, subscene, "Frames"), 'wb') as fp:   
         pickle.dump(framewise_tracks, fp)
     with open(os.path.join(flow_folder, subscene, "Tracks"), 'wb') as fp:   
-        pickle.dump(complete_tracks, fp)
-    '''
-    #print(time.time()-start)
+        pickle.dump(adjusted_track_vectors, fp)
+
 
 
 def inputs():
@@ -157,7 +171,7 @@ def inputs():
         maxCorners = 500
         qualityLevel = 0.001
         minDistance = 10
-        blockSize = 3
+        blockSize = 10
         winSize = 25
         maxLevel = 3
         replace = True # MAKE FALSE AGAIN 
