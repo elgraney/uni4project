@@ -127,12 +127,12 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
 
     # TODO: How do I test this is working correctly?
     commonFunctions.makedir(os.path.join(flow_folder, subscene))
-
+    '''
     with open(os.path.join(flow_folder, subscene, "Frames"), 'wb') as fp:   
         pickle.dump(framewise_tracks, fp)
     with open(os.path.join(flow_folder, subscene, "Tracks"), 'wb') as fp:   
         pickle.dump(complete_tracks, fp)
-
+    '''
     #print(time.time()-start)
 
 
@@ -157,10 +157,10 @@ def inputs():
         maxCorners = 500
         qualityLevel = 0.001
         minDistance = 10
-        blockSize = 10
+        blockSize = 3
         winSize = 25
         maxLevel = 3
-        replace = False # MAKE FALSE AGAIN 
+        replace = True # MAKE FALSE AGAIN 
 
     return preprocessing_code, opflow_code, replace, maxCorners, qualityLevel, minDistance, blockSize, winSize, maxLevel
 
