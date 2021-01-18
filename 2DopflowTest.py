@@ -142,7 +142,7 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
 
     #Printing to frame
     index = 0
-    while(index < len_list_dir):
+    while(index < len_list_dir-2):
         frame1 = cv2.imread(os.path.join(frame_dir, os.listdir(frame_dir)[index]))
         frame2 = cv2.imread(os.path.join(frame_dir, os.listdir(frame_dir)[index+1]))
         vis1 = frame1.copy()
@@ -152,16 +152,22 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
         base_tracks_copies = [tr[0:index+1] for tr in diff_list_list]
         print(index)
         #print("base", base_tracks_copies[-1])
-        print("base", base_tracks_copies[-5], base_tracks_copies[-4], base_tracks_copies[-3], base_tracks_copies[-2], base_tracks_copies[-1] )
-        print("adjusted", adj_tracks_copies[-5], adj_tracks_copies[-4], adj_tracks_copies[-3], adj_tracks_copies[-2], adj_tracks_copies[-1] )
+        #print("base", base_tracks_copies[-5], base_tracks_copies[-4], base_tracks_copies[-3], base_tracks_copies[-2], base_tracks_copies[-1] )
+        #print("adjusted", adj_tracks_copies[-5], adj_tracks_copies[-4], adj_tracks_copies[-3], adj_tracks_copies[-2], adj_tracks_copies[-1] )
         
         # this is pointless. You need to see the transformation. Then take the vector of it (apply to 0, 0), and compare to change in frame
+
+        transform = transforms[index]
+        vector = np.array([1, 1, 0.]).reshape(3,1)
+        result = np.dot(np.ascontiguousarray(transform), vector)
+        print(result)
+        print(np.linalg.norm(result))
 
         index += 1
         cv2.imshow('lk_track1', vis1)
         cv2.imshow('lk_track2', vis2)
 
-        ch = 0xFF & cv2.waitKey(3)
+        ch = 0xFF & cv2.waitKey(10)
         if ch == 27:
             break
         time.sleep(1)
