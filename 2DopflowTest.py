@@ -57,7 +57,7 @@ def format_track(track, framewise_tracks, transforms):
     # Tracks
     track_vector = calculate_vectors(difference_list, np.array(transforms[index:index+len(track)]))
 
-    return framewise_tracks, track_vector
+    return framewise_tracks, track_vector, difference_list
 
 
 
@@ -69,7 +69,7 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
     tracks = []
     complete_tracks = []
     list_dir = os.listdir(frame_dir)
-    len_list_dir = len(list_dir)
+    len_list_dir = int(len(list_dir)/3)
 
     # params for ShiTomasi corner detection
     camera_feature_params = dict( maxCorners = 20,
@@ -133,19 +133,54 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
     framewise_tracks = np.full((len_list_dir-2, width, height, 2), np.nan)
 
     adjusted_tracks_list =[]
+    diff_list_list = []
     for track in complete_tracks:
         if len(track) > 2:
-            framewise_tracks, adjusted_track_vectors = format_track(track, framewise_tracks, transforms)
+            framewise_tracks, adjusted_track_vectors, diff_list = format_track(track, framewise_tracks, transforms)
             adjusted_tracks_list.append(adjusted_track_vectors)
+            diff_list_list.append(diff_list)
+
+    #Printing to frame
+    index = 0
+    while(index < len_list_dir):
+        frame1 = cv2.imread(os.path.join(frame_dir, os.listdir(frame_dir)[index]))
+        frame2 = cv2.imread(os.path.join(frame_dir, os.listdir(frame_dir)[index+1]))
+        vis1 = frame1.copy()
+        vis2 = frame2.copy()
+        
+        adj_tracks_copies = [tr[0:index+1] for tr in adjusted_tracks_list]
+        base_tracks_copies = [tr[0:index+1] for tr in diff_list_list]
+        print(index)
+        #print("base", base_tracks_copies[-1])
+        print("base", base_tracks_copies[-5], base_tracks_copies[-4], base_tracks_copies[-3], base_tracks_copies[-2], base_tracks_copies[-1] )
+        print("adjusted", adj_tracks_copies[-5], adj_tracks_copies[-4], adj_tracks_copies[-3], adj_tracks_copies[-2], adj_tracks_copies[-1] )
+        
+        # this is pointless. You need to see the transformation. Then take the vector of it (apply to 0, 0), and compare to change in frame
+
+        index += 1
+        cv2.imshow('lk_track1', vis1)
+        cv2.imshow('lk_track2', vis2)
+
+        ch = 0xFF & cv2.waitKey(3)
+        if ch == 27:
+            break
+        time.sleep(1)
+    cv2.destroyAllWindows()
+
 
     # TODO: How do I test this is working correctly?
     commonFunctions.makedir(os.path.join(flow_folder, subscene))
-    
+    '''
     with open(os.path.join(flow_folder, subscene, "Frames"), 'wb') as fp:   
         pickle.dump(framewise_tracks, fp)
     with open(os.path.join(flow_folder, subscene, "Tracks"), 'wb') as fp:   
-        pickle.dump(adjusted_tracks_list, fp)
+        pickle.dump(adjusted_track_vectors, fp)
+    '''
 
+def draw_str(dst, target, s):
+    x, y = target
+    cv2.putText(dst, s, (x+1, y+1), cv2.FONT_HERSHEY_PLAIN, 1.0, (0, 0, 0), thickness = 2, lineType=cv2.LINE_AA)
+    cv2.putText(dst, s, (x, y), cv2.FONT_HERSHEY_PLAIN, 1.0, (255, 255, 255), lineType=cv2.LINE_AA)
 
 
 def inputs():
@@ -243,6 +278,7 @@ if __name__ == "__main__":
 
             threads.append(p1)
             p1.start() 
+            break
 
         current_folder +=1 
         if current_folder % round(total_folders/100) == 0:

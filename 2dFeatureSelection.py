@@ -23,7 +23,7 @@ def mean_feat_nopython(data):
 
 
 def mean_feature(data):
-    if data:
+    if data.any():
         return mean_feat_nopython(np.array(data))
     else:
         return 0 # NOTE: using 0 is bad! Find an alternative
@@ -34,10 +34,11 @@ def sd_feat_nopython(data):
 
 
 def sd_feature(data):
-    if data:
+    if data.any():
         return sd_feat_nopython(np.array(data))
     else:
         return 0 # NOTE: using 0 is bad! Find an alternative
+
 
 @numba.jit(nopython=True)
 def upper_feature(data):
@@ -51,82 +52,62 @@ def upper_feature(data):
 
 @numba.jit(nopython=True)
 def calculateMagnitudes(vectors):
+    length = len(vectors)
 
-    magnitudes = numba.typed.List() 
-    angles = numba.typed.List() 
+    magnitudes = np.empty(length) 
+    angles = np.empty(length) 
 
-    for vector in range(len(vectors)):
-        magnitude = float(np.linalg.norm(vectors[vector]))
+    for vector_index in range(length):
+        magnitude = float(np.linalg.norm(vectors[vector_index]))
 
         #x not require because would be multiplied by 0
-        y2 = vectors[vector][1]
+        y2 = vectors[vector_index][1]
 
         if magnitude>0:
             dot = (y2/magnitude)
             angle = np.arccos(dot)
-            angles.append(angle)
+            angles[vector_index]= angle
+        else: 
+             angles[vector_index] = 0
 
-        magnitudes.append(magnitude)
+        magnitudes[vector_index]= magnitude
             
-    sorted_magnitudes = sorted(magnitudes)
+    sorted_magnitudes = np.sort(magnitudes)
     return sorted_magnitudes, angles
-
-
-'''
-@numba.jit(nopython=True) 
-def calculateVectors(track): 
-    #DEPRICATED? If 2D Opflow is changed this must be removed too!
-    x_vectors = numba.typed.List()
-    y_vectors = numba.typed.List() 
-    for index in range(len(track)-1):
-        x_vectors.append(track[index+1][0] - track[index][0])
-        y_vectors.append(track[index+1][1] - track[index][1])
-    return x_vectors, y_vectors
-'''
-
-
-@numba.jit(nopython=True)
-def calculateRelatives( dif_fm_mean, dif_fm_sd, average_flow):
-        rel_dif_fm_mean = numba.typed.List() 
-        rel_dif_fm_sd  = numba.typed.List()
-        for item in dif_fm_mean:
-            rel_dif_fm_mean.append(item / average_flow)
-        for item in dif_fm_sd:
-            rel_dif_fm_sd.append(item / average_flow)
-        return rel_dif_fm_mean, rel_dif_fm_sd
 
 
 @numba.jit(nopython=True)
 def angleDifference(angles):
-    diffs = numba.typed.List()
-    for index in range(len(angles)-1):
+    length = len(angles) -1
+    diffs = np.empty(length) 
+    for index in range(length):
         
-        diffs.append(np.pi - abs(abs(angles[index+1] - angles[index]) - np.pi))
+        diffs[index] = (np.pi - abs(abs(angles[index+1] - angles[index]) - np.pi))
     return diffs
 
 
 def frame_features(flow_list):
-    mean_list = []
+    mean_list = numba.typed.List()
 
-    direction_sd = []
-    sd_list = []
-
-    len_flow_list0 = len(flow_list[0])
-    len_flow_list00 = len(flow_list[0][0])
+    direction_sd = numba.typed.List()
+    sd_list = numba.typed.List()
     
     for frame_index in range(len(flow_list)):
         #get optical flow from 2 frames and save changes in magnitudes
-        pure_vector_list = numba.typed.List()
+        flattened = flow_list[frame_index].reshape(-1, 2)
 
-        for x in range(len_flow_list0):
-            for y in range(len_flow_list00):
-                if flow_list[frame_index][x][y]:
-                    pure_vector_list.append(np.array(flow_list[frame_index][x][y]))
-        try:
-            magnitudes, angles = calculateMagnitudes(pure_vector_list)
-        except:
-            continue
-    
+        nan_array = np.isnan(flattened)
+        not_nan_array = ~ nan_array
+        stripped = flattened[not_nan_array].reshape(-1,2)
+
+        #change to unravel array
+        #then strip of Nan values
+
+        magnitudes, angles = calculateMagnitudes(stripped)
+
+        if not magnitudes.any() or not angles.any():
+            continue 
+
         frame_mean = mean_feature(magnitudes)
         mean_list.append(frame_mean) # mean of whole flow
         
@@ -156,7 +137,8 @@ def tracks_features(tracks_list):
 
         magnitudes, angles = calculateMagnitudes(np.array(track_vectors))
    
-        
+        if not magnitudes.any() or not angles.any():
+            continue 
 
         angle_differences = angleDifference(angles)
         angle_consistency_addition = mean_feature(angle_differences)
@@ -195,6 +177,7 @@ def tracks_features(tracks_list):
     return track_means, track_sds, angle_consistency, angle_range, oscillation_rate, oscillation_consistency
 
 
+
 def processVideo(folder_name, load_directory, return_dict, relative = False,):
     try:
         flow_list = pickle.load( open( os.path.join(load_directory, folder_name, "Frames"), "rb" ))
@@ -215,15 +198,15 @@ def processVideo(folder_name, load_directory, return_dict, relative = False,):
     video_windspeed = name.split("-")[-1]
     video_features = {} 
     video_features["category"] = video_windspeed # TODO extend to metadata and make list of all metadata aspects like environement, etc
-    video_features["mean"] = mean_feature(mean_list)
-    video_features["sd"] = mean_feature(sd_list) #best
-    video_features["direction_sd"] = mean_feature(direction_sd)
-    video_features["track_means"] = mean_feature(track_means)
-    video_features["track_sds"] = mean_feature(track_sds) 
-    video_features["angle_consistency"] = mean_feature(angle_consistency) 
-    video_features["angle_range"] = mean_feature(angle_range)
-    video_features["oscillation_rate"] = mean_feature(oscillation_rate) 
-    video_features["oscillation_consistency"] = mean_feature(oscillation_consistency) 
+    video_features["mean"] = mean_feature(np.array(mean_list))
+    video_features["sd"] = mean_feature(np.array(sd_list)) #best
+    video_features["direction_sd"] = mean_feature(np.array(direction_sd))
+    video_features["track_means"] = mean_feature(np.array(track_means))
+    video_features["track_sds"] = mean_feature(np.array(track_sds))
+    video_features["angle_consistency"] = mean_feature(np.array(angle_consistency))
+    video_features["angle_range"] = mean_feature(np.array(angle_range))
+    video_features["oscillation_rate"] = mean_feature(np.array(oscillation_rate))
+    video_features["oscillation_consistency"] = mean_feature(np.array(oscillation_consistency)) 
     return_dict[name] = video_features
 
 
