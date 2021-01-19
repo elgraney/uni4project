@@ -164,10 +164,10 @@ def tracks_features(tracks_list):
                     turning_points.append(index)
         
         if turning_points:
-            oscillation_rate_addition = mean_feature(list(np.diff(turning_points)))
+            oscillation_rate_addition = mean_feature(np.diff(turning_points))
             if oscillation_rate_addition:
                 oscillation_rate.append(oscillation_rate_addition)
-            oscillation_consistency_addition = sd_feature(list(np.diff(turning_points)))
+            oscillation_consistency_addition = sd_feature(np.diff(turning_points))
             if oscillation_consistency_addition:
                 oscillation_consistency.append(oscillation_consistency_addition)
         
