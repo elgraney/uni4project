@@ -128,6 +128,8 @@ def tracks_features(tracks_list):
     oscillation_rate = []
     oscillation_consistency = []
 
+    #Not needed?
+    #TODO remove tracks proper - not needed, handled earlier
     for track in tracks_list:
         track_proper = track[1:]
         if not len(track_proper)>1:

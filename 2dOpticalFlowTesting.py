@@ -37,16 +37,60 @@ def calculate_vectors(track_vectors, inv_transforms):
         corrected_vectors[index] = [res[0][0], res[1][0]]
     return corrected_vectors
 
-
+'''
 def minus_tracks(list1, list2):
     return np.subtract(list1, list2)
+'''
+
+#@vectorize(['float32(float32, float32)'], target='cuda')
+#@numba.jit(nopython=True)
+def minus_tracks(a, b):
+    return a - b
+
+@numba.jit(nopython=True)
+def filter_differences(difference_list):
+    x_pos = False
+    x_neg = False
+    y_pos = False
+    y_neg = False
+    for index in range(len(difference_list)):
+        dx = difference_list[index][0]
+        dy = difference_list[index][1]
+        if dx >= 0:
+            x_pos = True
+        elif dx <= 0:
+            x_neg = True
+        
+        if dy >= 0:
+            y_pos = True
+        elif dy <= 0:
+            y_neg = True
+
+    if x_pos and x_neg and y_pos and y_neg:
+        return True
+    else: 
+        return False
 
 
 def format_track(track, framewise_tracks, transforms):
     index = track[0]
+
     list1 = np.array(track[2:])
+    list1x = list1[:,0]
+    list1y = list1[:,1]
+    
     list2 = np.array(track[1:-1])
-    difference_list = minus_tracks(list1, list2)
+    list2x = list2[:,0]
+    list2y = list2[:,1]
+
+
+    x_diffs = minus_tracks(list1x, list2x)
+    y_diffs = minus_tracks(list1y, list2y)
+
+    difference_list = np.column_stack((x_diffs,y_diffs))
+    if not filter_differences(difference_list):
+        return framewise_tracks, None, False
+
     for vector_index in range(len(difference_list)):
 
         x = difference_list[vector_index][0]
@@ -57,9 +101,8 @@ def format_track(track, framewise_tracks, transforms):
     # Tracks
     track_vector = calculate_vectors(difference_list, np.array(transforms[index:index+len(track)]))
     track_vector = np.insert(track_vector, 0, [index, index], axis=0)
-    return framewise_tracks, track_vector
 
-
+    return framewise_tracks, track_vector, True
 
 
 def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
@@ -135,8 +178,9 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
     adjusted_tracks_list =[]
     for track in complete_tracks:
         if len(track) > 2:
-            framewise_tracks, adjusted_track_vectors = format_track(track, framewise_tracks, transforms)
-            adjusted_tracks_list.append(adjusted_track_vectors)
+            framewise_tracks, adjusted_track_vectors, is_valid = format_track(track, framewise_tracks, transforms)
+            if is_valid:
+                adjusted_tracks_list.append(adjusted_track_vectors)
 
     # TODO: How do I test this is working correctly?
     commonFunctions.makedir(os.path.join(flow_folder, subscene))
@@ -172,7 +216,7 @@ def inputs():
         blockSize = 10
         winSize = 25
         maxLevel = 3
-        replace = False # MAKE FALSE AGAIN 
+        replace = True # MAKE FALSE AGAIN 
 
     return preprocessing_code, opflow_code, replace, maxCorners, qualityLevel, minDistance, blockSize, winSize, maxLevel
 
@@ -196,6 +240,8 @@ if __name__ == "__main__":
                     maxLevel = maxLevel,
                     criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
    
+    #TESTING INSERT
+    opflow_code = "Flow Test 1"
 
   
 
@@ -214,8 +260,14 @@ if __name__ == "__main__":
 
     total_folders = len(os.listdir(load_directory))
     current_folder = 0
+    n = 5
     for scene in os.listdir(load_directory):
-        
+
+        if not current_folder % n == 0: # DO 1 in N FILES - TESTING
+            current_folder +=1 
+            continue
+
+
         scenes_directory = os.path.join(load_directory, scene)
         save_folder = os.path.join(save_directory, scene)
         if not os.path.exists(save_folder):
@@ -243,6 +295,7 @@ if __name__ == "__main__":
 
             threads.append(p1)
             p1.start() 
+            break # DO ONLY ONE SUBSCENE PER SCENE
 
         current_folder +=1 
         if current_folder % round(total_folders/100) == 0:

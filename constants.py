@@ -1,4 +1,4 @@
-THREADS = 10
+THREADS = 1
 feature0 = "category"
 
 validation_set_proportion = 0
