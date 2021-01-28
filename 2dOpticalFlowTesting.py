@@ -19,22 +19,24 @@ from scipy.ndimage import affine_transform
 
 def camera_motion_negation(prev_pts, curr_pts):
     #Find transformation matrix
-    m = cv2.estimateAffine2D(prev_pts, curr_pts) 
+    m = cv2.estimateAffinePartial2D(prev_pts, curr_pts, ) 
+    transx = m[0][0][2]
+    transy = m[0][1][2]
+    if transx < 0.1 and transy < 0.1:
+        return np.array([0, 0])
+    else:
+        return np.array([transx, transy])
 
-    transform = m[0]
-    inverse_padded_transform = np.vstack((cv2.invertAffineTransform(transform),np.array([0.,0.,1.])))#invertAffineTransform outputs a 3x2 matrix: add [0,0,1] row to make 3x3.
-    return inverse_padded_transform
 
-
-@numba.jit(nopython=True)
-def calculate_vectors(track_vectors, inv_transforms):
-
+#@numba.jit(nopython=True)
+def calculate_vectors(track_vectors, transforms):
+    
     corrected_vectors = np.empty((len(track_vectors),2))
-    for (x, y), transform, index in zip(track_vectors, inv_transforms, range(len(track_vectors))):
-        
-        vector = np.array([x, y, 0.]).reshape(3,1)
-        res = np.dot(np.ascontiguousarray(transform), vector) # does dot apply the inverse transform correctly?
-        corrected_vectors[index] = [res[0][0], res[1][0]]
+    for track_vector, transform, index in zip(track_vectors, transforms, range(len(track_vectors))):
+
+        corrected_vectors[index][0] = track_vector[0] - transform[0]
+        corrected_vectors[index][1] = track_vector[1] - transform[1]
+
     return corrected_vectors
 
 '''
@@ -58,12 +60,12 @@ def filter_differences(difference_list):
         dy = difference_list[index][1]
         if dx >= 0:
             x_pos = True
-        elif dx <= 0:
+        if dx <= 0:
             x_neg = True
         
         if dy >= 0:
             y_pos = True
-        elif dy <= 0:
+        if dy <= 0:
             y_neg = True
 
     if x_pos and x_neg and y_pos and y_neg:
@@ -74,20 +76,9 @@ def filter_differences(difference_list):
 
 def format_track(track, framewise_tracks, transforms):
     index = track[0]
-
     list1 = np.array(track[2:])
-    list1x = list1[:,0]
-    list1y = list1[:,1]
-    
     list2 = np.array(track[1:-1])
-    list2x = list2[:,0]
-    list2y = list2[:,1]
-
-
-    x_diffs = minus_tracks(list1x, list2x)
-    y_diffs = minus_tracks(list1y, list2y)
-
-    difference_list = np.column_stack((x_diffs,y_diffs))
+    difference_list = minus_tracks(list1, list2)
     if not filter_differences(difference_list):
         return framewise_tracks, None, False
 
@@ -115,8 +106,8 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
     len_list_dir = len(list_dir)
 
     # params for ShiTomasi corner detection
-    camera_feature_params = dict( maxCorners = 20,
-                    qualityLevel = 0.01,
+    camera_feature_params = dict( maxCorners = 100,
+                    qualityLevel = 0.001,
                     minDistance = 20,
                     blockSize = 3 )
 
@@ -135,10 +126,24 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
             d = abs(p0-p0r).reshape(-1, 2).max(-1)
             good = d < 1 # keep points that are the same forward and back
 
-            sp0 = cv2.goodFeaturesToTrack(frame_gray, **camera_feature_params)
-            sp1, _, _ = cv2.calcOpticalFlowPyrLK(img0, img1, sp0, None, **lk_params) # find new points
+            sp0 = cv2.goodFeaturesToTrack(cv2.medianBlur(frame_gray,5), **camera_feature_params)
+            sp1, _, _ = cv2.calcOpticalFlowPyrLK(cv2.medianBlur(img0,5), cv2.medianBlur(img1,5), sp0, None, **lk_params) # find new points
 
             transforms.append(camera_motion_negation(sp0, sp1)) # currently piggybacking on tracks points --> not ideal, switch to different selector
+            
+            if False:#index<6:
+                vis = cv2.medianBlur(frame.copy(),5)
+                for i in sp0:
+                    x,y = i.ravel()
+                    cv2.circle(vis,(x,y),3,255,-1)
+                cv2.imshow('lk_track', vis)
+                print(transforms[-1])
+                ch = 0xFF & cv2.waitKey(1)
+                if ch == 27:
+                    break
+                time.sleep(2)
+                cv2.destroyAllWindows()
+            #transforms.append(np.identity)
 
             new_tracks = []
             for tr,(x,y), good_flag in zip(tracks, p1.reshape(-1, 2), good):
