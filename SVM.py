@@ -122,6 +122,8 @@ if __name__ == '__main__':
     load_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", joined_code, filename)
     data = pickle.load( open( load_dir, "rb") )
 
+    #Scale data
+    data = machineLearning.normal_scale(data)
     data = machineLearning.standard_scale(data)
 
     
@@ -130,6 +132,7 @@ if __name__ == '__main__':
     features = list(data.keys())[1:]
     print("Estimating with features {}".format(features))
     procedure = test_order(features)
+    
 
     results = {}
 
@@ -168,6 +171,7 @@ if __name__ == '__main__':
         #output_string = "\nTest {}: Exact Accuracy={}, Lenient Accuracy={}, Total differences/total items={}".format(key, value[0], value[1], value[2])
         #text_output(output_string, "Best", save_dir, features)
         
+    evaluation.test_ranking("V:\\Uni4\\SoloProject\\Outputs\\4_3_500_5_3_10_C_False_500_0.001_10_10_25_3\\tests")
 
     end=time.time()
     print("estimation duration:")

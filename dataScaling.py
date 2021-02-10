@@ -8,7 +8,7 @@ if __name__ == '__main__':
 
     # handle command line args
 
-    load_dir = "V:\\Uni4\\SoloProject\\DataSets\\4_3_500_5_3_10_C_False_500_0.001_10_10_25_3\\2"
+    load_dir = "V:\\Uni4\\SoloProject\\DataSets\\4_3_500_5_3_10_C_False_500_0.001_10_10_25_3\\default"
     data = pickle.load( open( load_dir, "rb") )
 
     stats_by_force = {}
