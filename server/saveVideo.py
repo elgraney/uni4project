@@ -6,33 +6,33 @@ from ftplib import FTP
 
 def capture_video():
     cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-    cap.set(cv2.CAP_PROP_FPS, 10)
+    print(cap.get(5))
+
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
 
     filename = datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H-%M-%S.avi")
     print("making",filename)
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(filename,fourcc, 10.0, (1280,720))
+    out = cv2.VideoWriter(filename,fourcc, 10.0, (1920,1080))
 
 
-    start = time.time()
-
+    
+    index = 0
     while(cap.isOpened()):
         ret, frame = cap.read()
-        if ret==True:
-            # write the flipped frame
+        if ret==True and index % 3 == 0:
             out.write(frame)
-
-        if time.time()-start > 30: # 30 seconds clips
+        index+=1
+        if index > 30 * 30: # 30 seconds clips
             break
 
     # Release everything if job is finished
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-    upload_video(filename)
+    #upload_video(filename)
 
 def upload_video(filename):
     print("Uploading", filename)
@@ -46,6 +46,7 @@ def upload_video(filename):
 
 
 if __name__ == "__main__":
+    capture_video()
     schedule.every().day.at("07:00").do(capture_video)
     schedule.every().day.at("08:00").do(capture_video)
     schedule.every().day.at("09:00").do(capture_video)
