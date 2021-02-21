@@ -32,7 +32,7 @@ def capture_video():
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-    #upload_video(filename)
+    upload_video(filename)
 
 def upload_video(filename):
     print("Uploading", filename)
@@ -46,7 +46,6 @@ def upload_video(filename):
 
 
 if __name__ == "__main__":
-    capture_video()
     schedule.every().day.at("07:00").do(capture_video)
     schedule.every().day.at("08:00").do(capture_video)
     schedule.every().day.at("09:00").do(capture_video)
