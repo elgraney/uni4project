@@ -7,6 +7,7 @@ import time
 import random
 import string
 import shutil
+import constants
 
 # This file handles the preparation of video files into useful data items
 
@@ -75,7 +76,7 @@ def extract_frames(clip, times, imgdir):
         clip.save_frame(imgpath, t)
 
 
-def process_video(load_path, save_path, fileID, location, ratio, width, interval, remainder, frame_rate):
+def process_video(load_path, save_path, fileID, location, ratio, width, interval, remainder, frame_rate, max_loops = 100):
     '''
     load_path: the directory of the video to load
     save_path:
@@ -96,7 +97,6 @@ def process_video(load_path, save_path, fileID, location, ratio, width, interval
     # Split the full video into multiple clips each 'interval' seconds long
     clips = []
     #setting an upper limit on the number of subclips that can be made
-    max_loops = 100 # currently too high to be useful (reduce to ~5 to 10 to be effective)
     loops = 0
     for start_time in range(0,int(video_length)-interval, interval):
         clips.append(reduced_video.subclip(start_time, start_time + interval))
@@ -155,17 +155,23 @@ def cleanid(filename):
 
 def inputs():
     if len(sys.argv) > 1:
+        print(sys.argv[1])
         try:
-            input_string = str(sys.argv[1]).split()
+            input_string = str(sys.argv[1]).split("_")
             ratio1 = input_string[0]
             ratio2 = input_string[1]
             ratio = ratio1+"/"+ratio2
-            width = str(sys.argv[2])
-            interval = str(sys.argv[3])
-            remainder = str(sys.argv[4])
-            frame_rate = str(sys.argv[5])
-            focus = str(sys.argv[6])
-            replace = str(sys.argv[7])
+            width = eval(input_string[2])
+            interval = eval(input_string[3])
+            remainder = eval(input_string[4])
+            frame_rate = eval(input_string[5])
+            focus = input_string[6]
+            max_loops = eval(input_string[7])
+            if sys.argv[2] == "True":
+                replace = True
+            else:
+                replace = False
+
         except:
             print("Error in input string: using default settings")
     else:
@@ -176,20 +182,22 @@ def inputs():
         remainder = 3
         frame_rate = 10
         focus = ["C"]
+        max_loops = 10
         replace = False
 
-    return ratio, width, interval, remainder, frame_rate, focus, replace
+    print(replace)
+    return ratio, width, interval, remainder, frame_rate, focus, max_loops, replace
 
     
 if __name__ == "__main__":
     start = time.time()
 
-    ratio, width, interval, remainder, frame_rate, focus, replace = inputs()
+    ratio, width, interval, remainder, frame_rate, focus, max_loops, replace = inputs()
 
     # Program processes all videos in directory folder
     directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "wind footage")
     ratio_split = ratio.split("/")
-    save_directory = os.path.join(os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Frames"), "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)),str(replace)))
+    save_directory = os.path.join(os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Frames"), "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)), str(max_loops)))
     ratio = eval(ratio)
     
     if not os.path.exists(save_directory):
@@ -219,6 +227,7 @@ if __name__ == "__main__":
                     if os.path.exists(save_path) and replace == True:
                         shutil.rmtree(save_path)
                     elif os.path.exists(save_path) and replace == False:
+                        #print("skipping", filename)
                         continue
                     
                     print("Processing", filename)
@@ -227,7 +236,7 @@ if __name__ == "__main__":
                     os.mkdir(save_path)
                     
                     for focus_point in focus:
-                        while len(threads) >= 10:
+                        while len(threads) >= constants.THREADS:
                             for thread in threads:
                                 if not thread.is_alive():   
                                     threads.remove(thread)
@@ -236,7 +245,7 @@ if __name__ == "__main__":
                         # Due to ratio reduction there needs only be 2 corners focused on. 
                         # Ratio is reduced in such a way that only one dimension is reduced at a time. 
                         
-                        p1 = multiprocessing.Process(target=process_video, args=(load_path, save_path, filename_string, focus_point, ratio, width, interval, remainder, frame_rate))
+                        p1 = multiprocessing.Process(target=process_video, args=(load_path, save_path, filename_string, focus_point, ratio, width, interval, remainder, frame_rate, max_loops))
                         threads.append(p1)
                         p1.start()
                    

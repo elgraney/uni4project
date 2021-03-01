@@ -14,6 +14,7 @@ import constants
 import evaluation
 import commonFunctions
 import machineLearning
+import numpy as np
 
 # This file handles the creation of a classifier and the assessment of its performance and the performance of each of the training features
 def test_order(features):
@@ -21,15 +22,20 @@ def test_order(features):
     Produce a list of booleans to represent every possible combination of features
     '''
     feature_dict = {}
+    unique_features = []
     for feature in features:
         feature_dict[feature] = []
+        if not "SD" in feature:
+            unique_features.append(feature)
 
-    features_number = len(features)
+    features_number = len(unique_features)
     all_procedures = list(itertools.product([True, False], repeat=features_number)) # list every combination of True and False for a list as long as the features number
 
     for test in all_procedures:
-        for feature, test_val in zip(features, test):
+        for feature, test_val in zip(unique_features, test):
             feature_dict[feature].append(test_val)
+            feature_dict[feature+"SD"].append(test_val)
+
     return feature_dict
 
 
@@ -75,7 +81,7 @@ def get_test_id(test, features):
     test_id = ""
     for boolean, feature in zip(test, features):
         if boolean:
-            test_id = test_id +", "+ feature
+            test_id = test_id +","+ feature
 
     test_id = test_id[2:]
     return test_id
@@ -116,8 +122,14 @@ if __name__ == '__main__':
     joined_code = preprocessing_code + "_"  + opflow_code
 
     save_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Outputs", joined_code)
-    commonFunctions.makedir(save_dir)
-    commonFunctions.makedir(os.path.join(save_dir, "tests"))
+    if not os.path.exists(save_dir):
+        commonFunctions.makedir(save_dir)
+        commonFunctions.makedir(os.path.join(save_dir, "tests"))
+    else:
+        print("Save directory already exists")
+        exit()
+
+    
 
     load_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", joined_code, filename)
     data = pickle.load( open( load_dir, "rb") )
@@ -135,8 +147,12 @@ if __name__ == '__main__':
     
 
     results = {}
+    test_indices = range(len(list(procedure.values())[0])-1)
+    if len(test_indices) > 1000:
+        print("Limiting to 1000")
+        test_indices = list(np.random.choice(test_indices, 1000))
 
-    for test_index in range(len(list(procedure.values())[0])-1): # Each test
+    for test_index in test_indices: # Each test (max of 1000)
         test_bools = test_features(procedure, test_index)
         test_id = get_test_id(test_bools, features)
         test_save_dir = os.path.join(save_dir, "tests", test_id)

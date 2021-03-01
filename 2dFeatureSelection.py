@@ -201,14 +201,23 @@ def processVideo(folder_name, load_directory, return_dict, relative = False,):
     video_features = {} 
     video_features["category"] = video_windspeed # TODO extend to metadata and make list of all metadata aspects like environement, etc
     video_features["mean"] = mean_feature(np.array(mean_list))
+    video_features["meanSD"] = sd_feature(np.array(mean_list))
     video_features["sd"] = mean_feature(np.array(sd_list)) #best
-    video_features["direction_sd"] = mean_feature(np.array(direction_sd))
-    video_features["track_means"] = mean_feature(np.array(track_means))
-    video_features["track_sds"] = mean_feature(np.array(track_sds))
-    video_features["angle_consistency"] = mean_feature(np.array(angle_consistency))
-    video_features["angle_range"] = mean_feature(np.array(angle_range))
-    video_features["oscillation_rate"] = mean_feature(np.array(oscillation_rate))
-    video_features["oscillation_consistency"] = mean_feature(np.array(oscillation_consistency)) 
+    video_features["sdSD"] = sd_feature(np.array(sd_list))
+    video_features["dirSd"] = mean_feature(np.array(direction_sd))
+    video_features["dirSdSD"] = sd_feature(np.array(direction_sd))
+    video_features["trMeans"] = mean_feature(np.array(track_means))
+    video_features["trMeansSD"] = sd_feature(np.array(track_means))
+    video_features["trSds"] = mean_feature(np.array(track_sds))
+    video_features["trSdsSD"] = sd_feature(np.array(track_sds))
+    video_features["aglCons"] = mean_feature(np.array(angle_consistency))
+    video_features["aglConsSD"] = sd_feature(np.array(angle_consistency))
+    video_features["aglRng"] = mean_feature(np.array(angle_range))
+    video_features["aglRngSD"] = sd_feature(np.array(angle_range))
+    video_features["oscRate"] = mean_feature(np.array(oscillation_rate))
+    video_features["oscRateSD"] = sd_feature(np.array(oscillation_rate))
+    video_features["oscCons"] = mean_feature(np.array(oscillation_consistency)) 
+    video_features["oscConsSD"] = sd_feature(np.array(oscillation_consistency)) 
     return_dict[name] = video_features
 
 
@@ -270,10 +279,17 @@ if __name__ == '__main__':
     load_directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "OpticalFlow", preprocessing_code, opflow_code)
     save_directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", preprocessing_code + "_" + opflow_code)
 
-    features = evalSet(load_directory)
+    
 
     if not os.path.exists(save_directory):
         os.mkdir(save_directory)
+    else:
+        print("Save directory already exists")
+        exit()
+
+
+    features = evalSet(load_directory)
+
     print("\n\nSaving")
     with open(os.path.join(save_directory, filename), 'wb') as out:
         pickle.dump(features, out)

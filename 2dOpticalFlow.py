@@ -42,7 +42,7 @@ def minus_tracks(list1, list2):
     return np.subtract(list1, list2)
 
 
-def format_track(track, framewise_tracks, transforms):
+def format_track(track, framewise_tracks, transforms =[]):
     index = track[0]
     list1 = np.array(track[2:])
     list2 = np.array(track[1:-1])
@@ -55,7 +55,10 @@ def format_track(track, framewise_tracks, transforms):
         framewise_tracks[index+vector_index][int(x)][int(y)] = [x, y]
 
     # Tracks
+    ''' MOTION CORRECTION DISABLED
     track_vector = calculate_vectors(difference_list, np.array(transforms[index:index+len(track)]))
+    ''' 
+    track_vector = difference_list
     track_vector = np.insert(track_vector, 0, [index, index], axis=0)
     return framewise_tracks, track_vector
 
@@ -71,13 +74,15 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
     list_dir = os.listdir(frame_dir)
     len_list_dir = len(list_dir)
 
+    ''' MOTION CORRECTION DISABLED
     # params for ShiTomasi corner detection
     camera_feature_params = dict( maxCorners = 20,
                     qualityLevel = 0.01,
                     minDistance = 20,
                     blockSize = 3 )
-
+            
     transforms = []
+    '''
 
     while(index < len_list_dir-1):
         frame = cv2.imread(os.path.join(frame_dir,list_dir[index]))
@@ -92,10 +97,12 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
             d = abs(p0-p0r).reshape(-1, 2).max(-1)
             good = d < 1 # keep points that are the same forward and back
 
+            ''' MOTION CORRECTION DISABLED
             sp0 = cv2.goodFeaturesToTrack(frame_gray, **camera_feature_params)
             sp1, _, _ = cv2.calcOpticalFlowPyrLK(img0, img1, sp0, None, **lk_params) # find new points
 
             transforms.append(camera_motion_negation(sp0, sp1)) # currently piggybacking on tracks points --> not ideal, switch to different selector
+            ''' 
 
             new_tracks = []
             for tr,(x,y), good_flag in zip(tracks, p1.reshape(-1, 2), good):
@@ -135,7 +142,10 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
     adjusted_tracks_list =[]
     for track in complete_tracks:
         if len(track) > 2:
+            framewise_tracks, adjusted_track_vectors = format_track(track, framewise_tracks)
+            ''' MOTION CORRECTION DISABLED
             framewise_tracks, adjusted_track_vectors = format_track(track, framewise_tracks, transforms)
+            '''
             adjusted_tracks_list.append(adjusted_track_vectors)
 
     # TODO: How do I test this is working correctly?
@@ -151,21 +161,24 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
 def inputs():
     if len(sys.argv) > 1:
         try:
-            preprocessing_code = sys.argv[1]
-            opflow_code = str(sys.argv[2]).split()
-            replace = sys.argv[3]
-            maxCorners = opflow_code[0]
-            qualityLevel = opflow_code[1]
-            minDistance = opflow_code[2]
-            blockSize = opflow_code[3]
-            winSize = opflow_code[4]
-            maxLevel = opflow_code[5]
+            preprocessing_code = str(sys.argv[1])
+            opflow_code = str(sys.argv[2]).split("_")
+            
+            maxCorners = eval(opflow_code[0])
+            qualityLevel = eval(opflow_code[1])
+            minDistance = eval(opflow_code[2])
+            blockSize = eval(opflow_code[3])
+            winSize = eval(opflow_code[4])
+            maxLevel = eval(opflow_code[5])
+            if sys.argv[3] == "True":
+                replace = True
+            else:
+                replace = False
 
         except:
             print("Error in input string: using default settings")
     else:
-        preprocessing_code = "4_3_500_5_3_10_C_False"
-        opflow_code = "500_0.001_10_10_25_3"
+        preprocessing_code = "4_3_500_5_3_10_C_10_False"
         maxCorners = 500
         qualityLevel = 0.001
         minDistance = 10
@@ -173,6 +186,7 @@ def inputs():
         winSize = 25
         maxLevel = 3
         replace = False # MAKE FALSE AGAIN 
+    opflow_code = "{}_{}_{}_{}_{}_{}".format(str(maxCorners), str(qualityLevel), str(minDistance), str(blockSize), str(winSize),str(maxLevel))
 
     return preprocessing_code, opflow_code, replace, maxCorners, qualityLevel, minDistance, blockSize, winSize, maxLevel
 
@@ -183,7 +197,6 @@ if __name__ == "__main__":
 
     #TODO input string of preprocessing args
     # Hardcoded:
-    preprocessing_code = "4_3_500_5_3_10_C_False"
     preprocessing_code, opflow_code, replace, maxCorners, qualityLevel, minDistance, blockSize, winSize, maxLevel = inputs()
 
     # params for ShiTomasi corner detection

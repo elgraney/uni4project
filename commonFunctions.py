@@ -54,13 +54,13 @@ def code_inputs(sys_args):
     if len(sys_args) > 1:
         try:
             preprocessing_code = sys_args[1]
-            opflow_code = str(sys_args[2]).split()
+            opflow_code = str(sys_args[2])
             filename = str(sys_args[3])
 
         except:
             print("Error in input string: using default settings")
     else:
-        preprocessing_code = "4_3_500_5_3_10_C_False"
+        preprocessing_code = "4_3_500_5_3_10_C_10_False"
         opflow_code = "500_0.001_10_10_25_3"
         filename = "default"
 

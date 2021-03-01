@@ -28,7 +28,7 @@ def test_order(features):
     return feature_dict
 
 
-def test_ranking(load_dir):
+def test_ranking(load_dir, output = True):
     # Feature search takes place in the model selection phase and the best 10 or so models are saved. 
     # So delete this
     exact_stats = {}
@@ -39,10 +39,13 @@ def test_ranking(load_dir):
             exact_stats[file_id] = stats_file.readline().split(" ")[1]
             lenient_stats[file_id] = stats_file.readline().split(" ")[1]
 
+    exact_stats = dict(sorted(exact_stats.items(), key=lambda item: item[1]))
     lenient_stats = dict(sorted(lenient_stats.items(), key=lambda item: item[1]))
-    for key, value in lenient_stats.items():
-        print(key, value)
-    return
+    
+    if output:
+        for key, value in lenient_stats.items():
+            print(key, value)
+    return exact_stats, lenient_stats
     # TODO NEEDS A WHOLE LOT OF WORK!
 
 
@@ -124,3 +127,12 @@ def plot_differences_by_wind_force(test_output, save_dir):
     plt.savefig(os.path.join(save_dir, "Average Differences organised by Force"))
     return plot
  
+
+if __name__ == "__main__":
+    directory = "V:\\Uni4\\SoloProject\\Outputs\\"
+    for test_file in os.listdir("V:\\Uni4\\SoloProject\\Outputs\\"):
+        if "v" not in test_file and test_file != "Unique_Code":
+            print(test_file)
+            exact_stats, lenient_stats = test_ranking(os.path.join(directory, test_file, "tests"), False)
+            last = list(lenient_stats.keys())[-1]
+            print(last, lenient_stats[last])
