@@ -60,8 +60,10 @@ def code_inputs(sys_args):
         except:
             print("Error in input string: using default settings")
     else:
-        preprocessing_code = "4_3_500_5_3_10_C_10_False"
-        opflow_code = "500_0.001_10_10_25_3"
+        #preprocessing_code = "4_3_500_5_3_10_C_10"
+        preprocessing_code = "4_3_300_1_3_1_C_1"
+        #opflow_code = "500_0.001_10_10_25_3"
+        opflow_code = "500_0.01_5_10_25_3"
         filename = "default"
 
     return preprocessing_code, opflow_code, filename

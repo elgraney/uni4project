@@ -12,14 +12,15 @@ Experiment 1
 
 '''
 
-def runthrough(preprocessing_code, opflow_code, filename, replace):
+def runthrough(preprocessing_code, opflow_code, filename, replace, svm_code):
     path = "python preprocessing.py "+preprocessing_code+" "+str(replace)
     os.system(path)
     path = "python 2dOpticalFlow.py "+preprocessing_code+" "+opflow_code+" "+str(replace)
     os.system(path)
     path = "python 2dFeatureSelection.py "+preprocessing_code+" "+opflow_code+" "+filename
     os.system(path)
-    path = "python SVM.py "+preprocessing_code+" "+opflow_code+" "+filename
+    path = "python SVM.py "+preprocessing_code+" "+opflow_code+" "+filename+" "+svm_code
+    print(path)
     os.system(path)
 
 
@@ -27,7 +28,7 @@ def runthrough(preprocessing_code, opflow_code, filename, replace):
 
 if __name__ == "__main__":
     directory = os.path.split(os.path.abspath(os.curdir))[0]
-    filename = "Test 1"
+    filename = "Test"
 
     replace = False
     
@@ -51,13 +52,22 @@ if __name__ == "__main__":
     maxLevel = 3
 
 
+    kernel = "rbf"
+    gamma = "auto"
+    C = 1
     
 
     for width in ["300", "500", "700" ]:
-        for interval in ["1", "3", "5", "7"]:
-            for frame_rate in ["10", "8", "5", "3", "1"]:
-                for maxCorners in ["100", "500", "1000"]:
+        for interval in ["1", "2", "3", "8"]:
+            for frame_rate in ["1", "2", "3", "4"]:
+                for maxCorners in ["500", "1000", "2000"]:
+                    for minDistance in ["5", "10", "20", "50"]:
+                        for qualityLevel in ["0.01", "0.001", "0.0001"]:
+                            for blockSize in ["10"]:
+                                for winSize in ["25"]:
+                                    for maxLevel in ["3"]:
 
-                    preprocessing_code = "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)), str(max_loops))
-                    opflow_code = "{}_{}_{}_{}_{}_{}".format(str(maxCorners), str(qualityLevel), str(minDistance), str(blockSize), str(winSize),str(maxLevel))
-                    runthrough(preprocessing_code, opflow_code, filename, replace)
+                                        preprocessing_code = "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)), str(max_loops))
+                                        opflow_code = "{}_{}_{}_{}_{}_{}".format(str(maxCorners), str(qualityLevel), str(minDistance), str(blockSize), str(winSize),str(maxLevel))
+                                        svm_code = svm_code = "{}_{}_{}".format(str(kernel), str(gamma), str(C))
+                                        runthrough(preprocessing_code, opflow_code, filename, replace, svm_code)

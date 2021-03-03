@@ -62,10 +62,8 @@ def annotate_videos(path):
                 time_differences = {}
                 for key in weather_data.keys():
                     key_epoch_time = int(key)
-                    difference = key_epoch_time - video_epoch_time
-                    if difference > 0:
-                        time_differences[key] = difference
-                
+                    difference = abs(key_epoch_time - video_epoch_time) #closest time
+
                 if list(time_differences.values()) != []:
 
                     minimum = min(time_differences, key=time_differences.get)

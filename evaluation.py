@@ -2,6 +2,8 @@ import itertools
 from matplotlib import pyplot as plt
 import os
 import commonFunctions
+import numpy as np
+import pylab
 
 # How do we deal with the data?
 # 1. Store training and test separately
@@ -130,9 +132,38 @@ def plot_differences_by_wind_force(test_output, save_dir):
 
 if __name__ == "__main__":
     directory = "V:\\Uni4\\SoloProject\\Outputs\\"
+
+    
+    best = {} # key = param index, value = (value, accuracy)
+
     for test_file in os.listdir("V:\\Uni4\\SoloProject\\Outputs\\"):
         if "v" not in test_file and test_file != "Unique_Code":
+            params = test_file.split("\\")[-1].split("_")
+            print(params)
+
             print(test_file)
             exact_stats, lenient_stats = test_ranking(os.path.join(directory, test_file, "tests"), False)
             last = list(lenient_stats.keys())[-1]
             print(last, lenient_stats[last])
+
+            
+            for param_index in range(len(params)):
+                try:
+                    best[param_index].append((params[param_index], lenient_stats[last]))
+                except:
+                    best[param_index] = [(params[param_index], lenient_stats[last])]
+
+    for key, value in best.items():
+        sorted_value = sorted(value, key=lambda val: val[1])  
+        x = [item[0] for item in sorted_value]
+        if len(set(x))> 1:
+            y = [round(eval(item[1]),3) for item in sorted_value]
+
+            plt.scatter(x, y)
+            print(x, y)
+
+            plt.title(("Param", key))
+            plt.show()
+                
+            
+            

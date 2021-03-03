@@ -4,6 +4,8 @@ import numpy as np
 import os
 import multiprocessing
 import pickle
+import bz2
+import _pickle as cPickle
 import sys
 import shutil
 import time
@@ -19,34 +21,68 @@ from scipy.ndimage import affine_transform
 
 def camera_motion_negation(prev_pts, curr_pts):
     #Find transformation matrix
-    m = cv2.estimateAffine2D(prev_pts, curr_pts) 
+    m = cv2.estimateAffinePartial2D(prev_pts, curr_pts, ) 
+    transx = m[0][0][2]
+    transy = m[0][1][2]
+    if transx < 0.1 and transy < 0.1:
+        return np.array([0, 0])
+    else:
+        return np.array([transx, transy])
 
-    transform = m[0]
-    inverse_padded_transform = np.vstack((cv2.invertAffineTransform(transform),np.array([0.,0.,1.])))#invertAffineTransform outputs a 3x2 matrix: add [0,0,1] row to make 3x3.
-    return inverse_padded_transform
 
-
-@numba.jit(nopython=True)
-def calculate_vectors(track_vectors, inv_transforms):
-
+#@numba.jit(nopython=True)
+def calculate_vectors(track_vectors, transforms):
+    
     corrected_vectors = np.empty((len(track_vectors),2))
-    for (x, y), transform, index in zip(track_vectors, inv_transforms, range(len(track_vectors))):
-        
-        vector = np.array([x, y, 0.]).reshape(3,1)
-        res = np.dot(np.ascontiguousarray(transform), vector) # does dot apply the inverse transform correctly?
-        corrected_vectors[index] = [res[0][0], res[1][0]]
+    for track_vector, transform, index in zip(track_vectors, transforms, range(len(track_vectors))):
+
+        corrected_vectors[index][0] = track_vector[0] - transform[0]
+        corrected_vectors[index][1] = track_vector[1] - transform[1]
+
     return corrected_vectors
 
 
 def minus_tracks(list1, list2):
     return np.subtract(list1, list2)
+'''
+def minus_tracks(a, b):
+    return a - b
+'''
 
+@numba.jit(nopython=True)
+def filter_differences(difference_list):
+    x_pos = False
+    x_neg = False
+    y_pos = False
+    y_neg = False
+    for index in range(len(difference_list)):
+        dx = difference_list[index][0]
+        dy = difference_list[index][1]
+        if dx >= 0:
+            x_pos = True
+        if dx <= 0:
+            x_neg = True
+        
+        if dy >= 0:
+            y_pos = True
+        if dy <= 0:
+            y_neg = True
 
-def format_track(track, framewise_tracks, transforms =[]):
+    if x_pos and x_neg and y_pos and y_neg:
+        return True
+    else: 
+        return False
+
+def format_track(track, framewise_tracks, transforms =[], filter_flow = False):
     index = track[0]
     list1 = np.array(track[2:])
     list2 = np.array(track[1:-1])
     difference_list = minus_tracks(list1, list2)
+
+    if filter_flow: # If enabled, remove non-oscillating points
+        if not filter_differences(difference_list):
+            return framewise_tracks, None, False
+
     for vector_index in range(len(difference_list)):
 
         x = difference_list[vector_index][0]
@@ -60,7 +96,8 @@ def format_track(track, framewise_tracks, transforms =[]):
     ''' 
     track_vector = difference_list
     track_vector = np.insert(track_vector, 0, [index, index], axis=0)
-    return framewise_tracks, track_vector
+
+    return framewise_tracks, track_vector, True
 
 
 
@@ -142,18 +179,19 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
     adjusted_tracks_list =[]
     for track in complete_tracks:
         if len(track) > 2:
-            framewise_tracks, adjusted_track_vectors = format_track(track, framewise_tracks)
+            framewise_tracks, adjusted_track_vectors, is_valid = format_track(track, framewise_tracks, [])
             ''' MOTION CORRECTION DISABLED
             framewise_tracks, adjusted_track_vectors = format_track(track, framewise_tracks, transforms)
             '''
-            adjusted_tracks_list.append(adjusted_track_vectors)
+            if is_valid:
+                adjusted_tracks_list.append(adjusted_track_vectors)
 
     # TODO: How do I test this is working correctly?
     commonFunctions.makedir(os.path.join(flow_folder, subscene))
     
-    with open(os.path.join(flow_folder, subscene, "Frames"), 'wb') as fp:   
+    with bz2.BZ2File(os.path.join(flow_folder, subscene, "Frames.pbz2"), "w") as fp:
         pickle.dump(framewise_tracks, fp)
-    with open(os.path.join(flow_folder, subscene, "Tracks"), 'wb') as fp:   
+    with bz2.BZ2File(os.path.join(flow_folder, subscene, "Tracks.pbz2"), "w") as fp:
         pickle.dump(adjusted_tracks_list, fp)
 
 

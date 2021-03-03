@@ -9,7 +9,9 @@ import random
 from sklearn import svm
 import sys
 import copy
+import bz2
 import pickle
+import _pickle as cPickle
 import bisect 
 import numba 
 import constants
@@ -182,8 +184,12 @@ def tracks_features(tracks_list):
 
 def processVideo(folder_name, load_directory, return_dict, relative = False,):
     try:
-        flow_list = pickle.load( open( os.path.join(load_directory, folder_name, "Frames"), "rb" ))
-        tracks_list = pickle.load( open( os.path.join(load_directory, folder_name, "Tracks"), "rb" ))
+        flow_list = bz2.BZ2File(os.path.join(load_directory, folder_name, "Frames.pbz2"), "rb")
+        flow_list = cPickle.load(flow_list)
+        tracks_list = bz2.BZ2File(os.path.join(load_directory, folder_name, "Tracks.pbz2"), "rb")
+        tracks_list = cPickle.load(tracks_list)
+
+
     except:
         print("failed to load file {}".format(os.path.join(load_directory, folder_name)))
         return
@@ -195,7 +201,7 @@ def processVideo(folder_name, load_directory, return_dict, relative = False,):
 
     mean_list, direction_sd, sd_list = frame_features(flow_list)
     track_means, track_sds, angle_consistency, angle_range, oscillation_rate, oscillation_consistency = tracks_features(tracks_list)
-    
+
     #NOTE: these feats are combined in a bad way! averaging removes significant trends! FIND A BETTER WAY!
     video_windspeed = name.split("-")[-1]
     video_features = {} 
@@ -218,6 +224,7 @@ def processVideo(folder_name, load_directory, return_dict, relative = False,):
     video_features["oscRateSD"] = sd_feature(np.array(oscillation_rate))
     video_features["oscCons"] = mean_feature(np.array(oscillation_consistency)) 
     video_features["oscConsSD"] = sd_feature(np.array(oscillation_consistency)) 
+
     return_dict[name] = video_features
 
 

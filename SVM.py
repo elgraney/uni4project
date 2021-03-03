@@ -100,7 +100,27 @@ def output_stats(test_results, save_dir):
     commonFunctions.text_output(output_string[1:], "Statistics", save_dir)
 
 
+def input_svm_params(args):
+    if len(args) > 4:
+        try:
+            svm_code = args[4].split("_")
+            kernel = svm_code[0]
+            try:
+                gamma = float(svm_code[1])
+            except:
+                gamma = str(svm_code[1])
+            C = float(svm_code[2])
 
+        except:
+            print("Error in input string: using default settings")
+    else:
+        kernel = "rbf"
+        gamma = "auto"
+        C = 1
+        pass
+    svm_code = "{}_{}_{}".format(str(kernel), str(gamma), str(C))
+
+    return  svm_code, kernel, gamma, C
 
 # TODO make neat and incorporate evaluation.py
 # allow param input
@@ -119,17 +139,18 @@ if __name__ == '__main__':
     start = time.time()
 
     preprocessing_code, opflow_code, filename = commonFunctions.code_inputs(sys.argv)
-    joined_code = preprocessing_code + "_"  + opflow_code
+
+    svm_code, kernel, gamma, C = input_svm_params(sys.argv)
+    joined_code = preprocessing_code + "_" + opflow_code
 
     save_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Outputs", joined_code)
-    if not os.path.exists(save_dir):
-        commonFunctions.makedir(save_dir)
-        commonFunctions.makedir(os.path.join(save_dir, "tests"))
+    commonFunctions.makedir(save_dir)
+
+    if not os.path.exists(os.path.join(save_dir, svm_code)):
+        commonFunctions.makedir(os.path.join(save_dir, svm_code))
     else:
         print("Save directory already exists")
         exit()
-
-    
 
     load_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", joined_code, filename)
     data = pickle.load( open( load_dir, "rb") )
@@ -155,7 +176,7 @@ if __name__ == '__main__':
     for test_index in test_indices: # Each test (max of 1000)
         test_bools = test_features(procedure, test_index)
         test_id = get_test_id(test_bools, features)
-        test_save_dir = os.path.join(save_dir, "tests", test_id)
+        test_save_dir = os.path.join(save_dir, svm_code, test_id)
         commonFunctions.makedir(test_save_dir)
         results[test_id] = {}
 
@@ -187,7 +208,7 @@ if __name__ == '__main__':
         #output_string = "\nTest {}: Exact Accuracy={}, Lenient Accuracy={}, Total differences/total items={}".format(key, value[0], value[1], value[2])
         #text_output(output_string, "Best", save_dir, features)
         
-    evaluation.test_ranking("V:\\Uni4\\SoloProject\\Outputs\\4_3_500_5_3_10_C_False_500_0.001_10_10_25_3\\tests")
+    evaluation.test_ranking(os.path.join(save_dir, svm_code))
 
     end=time.time()
     print("estimation duration:")
