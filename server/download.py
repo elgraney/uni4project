@@ -63,10 +63,12 @@ def annotate_videos(path):
                 for key in weather_data.keys():
                     key_epoch_time = int(key)
                     difference = abs(key_epoch_time - video_epoch_time) #closest time
+                    time_differences[key] = difference
 
                 if list(time_differences.values()) != []:
 
                     minimum = min(time_differences, key=time_differences.get)
+                    print(minimum)
                     if time_differences[minimum] >= 3000: # if over an hour (actually a bit under and hour: hour is 3600)
                         print("no link for video", video_time )
                     else:

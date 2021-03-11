@@ -141,9 +141,10 @@ if __name__ == '__main__':
     preprocessing_code, opflow_code, filename = commonFunctions.code_inputs(sys.argv)
 
     svm_code, kernel, gamma, C = input_svm_params(sys.argv)
-    joined_code = preprocessing_code + "_" + opflow_code
 
-    save_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Outputs", joined_code)
+    save_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Outputs", preprocessing_code)
+    commonFunctions.makedir(save_dir)
+    save_dir = os.path.join(save_dir, opflow_code)
     commonFunctions.makedir(save_dir)
 
     if not os.path.exists(os.path.join(save_dir, svm_code)):
@@ -152,7 +153,7 @@ if __name__ == '__main__':
         print("Save directory already exists")
         exit()
 
-    load_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", joined_code, filename)
+    load_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", preprocessing_code, opflow_code, filename)
     data = pickle.load( open( load_dir, "rb") )
 
     #Scale data
@@ -202,11 +203,6 @@ if __name__ == '__main__':
         output_stats(results[test_id], test_save_dir)
 
 
-    
-    #sorted_results = collections.OrderedDict(sorted(results.items(), key=lambda x: x[1]))
-    #for key,value in sorted_results.items():
-        #output_string = "\nTest {}: Exact Accuracy={}, Lenient Accuracy={}, Total differences/total items={}".format(key, value[0], value[1], value[2])
-        #text_output(output_string, "Best", save_dir, features)
         
     evaluation.test_ranking(os.path.join(save_dir, svm_code))
 

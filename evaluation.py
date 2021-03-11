@@ -133,28 +133,39 @@ def plot_differences_by_wind_force(test_output, save_dir):
 if __name__ == "__main__":
     directory = "V:\\Uni4\\SoloProject\\Outputs\\"
 
-    
+    test_code_bests = {}
     best = {} # key = param index, value = (value, accuracy)
 
-    for test_file in os.listdir("V:\\Uni4\\SoloProject\\Outputs\\"):
-        if "v" not in test_file and test_file != "Unique_Code":
-            params = test_file.split("\\")[-1].split("_")
-            print(params)
-
-            print(test_file)
-            exact_stats, lenient_stats = test_ranking(os.path.join(directory, test_file, "tests"), False)
-            last = list(lenient_stats.keys())[-1]
-            print(last, lenient_stats[last])
-
+    for prepep_test in os.listdir(directory):
+        if "v" not in prepep_test and prepep_test != "Unique_Code":
             
-            for param_index in range(len(params)):
-                try:
-                    best[param_index].append((params[param_index], lenient_stats[last]))
-                except:
-                    best[param_index] = [(params[param_index], lenient_stats[last])]
+            for opflow_test in os.listdir(os.path.join(directory, prepep_test)):
+                params = prepep_test.split("\\")[-1].split("_") + opflow_test.split("_")
+                for SVM_test in os.listdir(os.path.join(directory, prepep_test,  opflow_test)):
+                    params = prepep_test.split("\\")[-1].split("_") + opflow_test.split("_") + SVM_test.split("_")
+                    #print(params)
+                    exact_stats, lenient_stats = test_ranking(os.path.join(directory, prepep_test,  opflow_test, SVM_test), False)
+                    try:
+                        last = list(lenient_stats.keys())[-1]
+                    except:
+                        print(os.path.join(directory, prepep_test,  opflow_test, SVM_test))
+                        exit()
+                    #print(last, lenient_stats[last])
+
+                    test_code_bests[(prepep_test+"__"+opflow_test+"__"+SVM_test)] = lenient_stats[last]
+                    
+                    for param_index in range(len(params)):
+                        try:
+                            best[param_index].append((params[param_index], lenient_stats[last]))
+                        except:
+                            best[param_index] = [(params[param_index], lenient_stats[last])]
+    
+    test_code_bests =  {k: v for k, v in sorted(test_code_bests.items(), key=lambda item: item[1])}
+    
 
     for key, value in best.items():
         sorted_value = sorted(value, key=lambda val: val[1])  
+        
         x = [item[0] for item in sorted_value]
         if len(set(x))> 1:
             y = [round(eval(item[1]),3) for item in sorted_value]
@@ -162,8 +173,9 @@ if __name__ == "__main__":
             plt.scatter(x, y)
             print(x, y)
 
+
             plt.title(("Param", key))
             plt.show()
                 
-            
+    print(test_code_bests)        
             

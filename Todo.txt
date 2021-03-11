@@ -3,3 +3,8 @@ There are multiple avenues to pursue.
 2. Filter items with camera motion out of data set
 3. Buy set up and implement weather station and learning system. Relies heavily on Sam.
 4. Fully explore parameters, features, machine learning and optical flow methods to draw conclusions.
+
+Note:
+Wind footage 1 = same as last year
+Wind footage 2 = added extra items
+Wind footage 3 = added extra items, removed innapropriate items

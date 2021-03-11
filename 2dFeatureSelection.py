@@ -284,9 +284,9 @@ if __name__ == '__main__':
     
     
     load_directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "OpticalFlow", preprocessing_code, opflow_code)
-    save_directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", preprocessing_code + "_" + opflow_code)
+    save_directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", preprocessing_code, opflow_code)
 
-    
+    commonFunctions.makedir(os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", preprocessing_code))
 
     if not os.path.exists(save_directory):
         os.mkdir(save_directory)

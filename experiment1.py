@@ -1,4 +1,5 @@
 import os
+import evaluation
 '''
 Experiment 1
     Uses general data, not excluding camera motion
@@ -24,6 +25,55 @@ def runthrough(preprocessing_code, opflow_code, filename, replace, svm_code):
     os.system(path)
 
 
+def preprocessing_experiment(opflow_flow, svm_code):
+    for width in ["300","400", "500" ]:
+        for interval in ["2", "3", "5"]:
+            for frame_rate in ["2", "3", "4"]:
+                preprocessing_code = "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)), str(max_loops))
+                runthrough(preprocessing_code, opflow_code, filename, replace, svm_code)
+
+
+def optical_flow_experiment(preprocessing_code, svm_code):
+    for maxCorners in ["500"]:
+        for minDistance in ["5"]:
+            for qualityLevel in ["0.01", "0.001", "0.0001"]:
+                for blockSize in ["10","20", "30"]:
+                    for winSize in ["25", "50", "70"]:
+                        for maxLevel in ["3"]:
+                            opflow_code = "{}_{}_{}_{}_{}_{}".format(str(maxCorners), str(qualityLevel), str(minDistance), str(blockSize), str(winSize),str(maxLevel))
+                            runthrough(preprocessing_code, opflow_code, filename, replace, svm_code)
+
+def SVM_experiment(preprocessing_code, opflow_flow):
+    for kernel in ["rbf"]:
+        for gamma in ["auto"]:
+            for C in ["0.001","0.01","0.1","1", "10", "100"]:
+                svm_code = svm_code = "{}_{}_{}".format(str(kernel), str(gamma), str(C))
+                runthrough(preprocessing_code, opflow_code, filename, replace, svm_code)
+
+
+
+def best_opflow():
+    directory = "V:\\Uni4\\SoloProject\\Outputs\\"
+    best = {}
+    for preprocessing_test in os.listdir(directory):
+        preprep_dir = os.path.join(directory, preprocessing_test)
+        
+        for opflow_test in os.listdir(preprep_dir):
+            opflow_dir = os.path.join(directory, opflow_test)
+
+            for SVM_test in os.listdir(opflow_dir):
+                svm_dir = os.path.join(directory, SVM_test)
+                for test in os.listdir(svm_dir):
+                    _, lenient_stats = evaluation.test_ranking(os.path.join(svm_dir, test), False)
+                    lenient_best = lenient_stats[-1]
+                    try:
+                        if lenient_best > best[opflow_test]:
+                            best[opflow_test] = lenient_best
+                    except KeyError:
+                        best[best_opflow] = lenient_best  
+    print(best)
+    return [1]
+
 
 
 if __name__ == "__main__":
@@ -33,16 +83,12 @@ if __name__ == "__main__":
     replace = False
     
     ratio = "4/3"
-    width = "500"
-    interval = "5"
+    width = "300"
+    interval = "3"
     remainder = "3"
-    frame_rate = "10"
+    frame_rate = "3"
     focus = "C"
     max_loops = "1" # only 1 clip per video for speeeeed
-    
-
-    
-
 
     maxCorners = 500
     qualityLevel = 0.001
@@ -51,23 +97,24 @@ if __name__ == "__main__":
     winSize = 25
     maxLevel = 3
 
-
     kernel = "rbf"
     gamma = "auto"
     C = 1
+
+
+    preprocessing_code = "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)), str(max_loops))
+    opflow_code = "{}_{}_{}_{}_{}_{}".format(str(maxCorners), str(qualityLevel), str(minDistance), str(blockSize), str(winSize),str(maxLevel))
+    svm_code = svm_code = "{}_{}_{}".format(str(kernel), str(gamma), str(C))
     
 
-    for width in ["300", "500", "700" ]:
-        for interval in ["1", "2", "3", "8"]:
-            for frame_rate in ["1", "2", "3", "4"]:
-                for maxCorners in ["500", "1000", "2000"]:
-                    for minDistance in ["5", "10", "20", "50"]:
-                        for qualityLevel in ["0.01", "0.001", "0.0001"]:
-                            for blockSize in ["10"]:
-                                for winSize in ["25"]:
-                                    for maxLevel in ["3"]:
+    preprocessing_experiment(opflow_code, svm_code)
+    preprep_best = [1] #best_preprep()
 
-                                        preprocessing_code = "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)), str(max_loops))
-                                        opflow_code = "{}_{}_{}_{}_{}_{}".format(str(maxCorners), str(qualityLevel), str(minDistance), str(blockSize), str(winSize),str(maxLevel))
-                                        svm_code = svm_code = "{}_{}_{}".format(str(kernel), str(gamma), str(C))
-                                        runthrough(preprocessing_code, opflow_code, filename, replace, svm_code)
+    optical_flow_experiment(preprocessing_code, svm_code)
+    opflow_best = best_opflow()
+    
+    #for top 5 in preprocessing_flow_exp
+    SVM_experiment(preprocessing_code, opflow_code)
+
+
+    #Currently 486 tests with significant caching 

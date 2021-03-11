@@ -106,7 +106,7 @@ def process_video(load_path, save_path, fileID, location, ratio, width, interval
             break
 
     # If remaining video is longer than <remainder> seconds duration
-    if video_length % interval >= remainder and loops < 6:
+    if video_length % interval >= remainder and loops < max_loops:
         clips.append(reduced_video.subclip((video_length // interval)*interval, video_length))
             
     #print("Writing",fileID,"...")
@@ -119,7 +119,7 @@ def process_video(load_path, save_path, fileID, location, ratio, width, interval
             subclip_path = os.path.join(save_path, location+"_"+str(index+1)+"-"+str(fileID))
             os.mkdir(subclip_path)
 
-            times = [x/frame_rate for x in range(0,int((clips[index].duration*10)+1))] #requires int; multiply by 10, +1 for maximised frames
+            times = [x/frame_rate for x in range(0,int((clips[index].duration*frame_rate)+1))] #requires int; multiply by 10, +1 for maximised frames
             extract_frames(clips[index], times, subclip_path)
         #print("Finished",fileID,"...")
     else:
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     ratio, width, interval, remainder, frame_rate, focus, max_loops, replace = inputs()
 
     # Program processes all videos in directory folder
-    directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "wind footage")
+    directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "wind footage 2")
     ratio_split = ratio.split("/")
     save_directory = os.path.join(os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Frames"), "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)), str(max_loops)))
     ratio = eval(ratio)
