@@ -53,7 +53,7 @@ def upper_feature(data):
     
 
 @numba.jit(nopython=True)
-def calculateMagnitudes(vectors):
+def calculateMagnitudes(vectors, normalisation = False):
     length = len(vectors)
 
     magnitudes = np.empty(length) 
@@ -75,6 +75,13 @@ def calculateMagnitudes(vectors):
         magnitudes[vector_index]= magnitude
             
     sorted_magnitudes = np.sort(magnitudes)
+
+    if normalisation:
+        try:
+            sorted_magnitudes = sorted_magnitudes/max(sorted_magnitudes)
+        except Exception:
+            print("Failure to normalise")
+
     return sorted_magnitudes, angles
 
 
@@ -88,7 +95,7 @@ def angleDifference(angles):
     return diffs
 
 
-def frame_features(flow_list):
+def frame_features(flow_list, normalisation = False):
     mean_list = numba.typed.List()
 
     direction_sd = numba.typed.List()
@@ -105,7 +112,8 @@ def frame_features(flow_list):
         #change to unravel array
         #then strip of Nan values
 
-        magnitudes, angles = calculateMagnitudes(stripped)
+
+        magnitudes, angles = calculateMagnitudes(stripped, normalisation = False)
 
         if not magnitudes.any() or not angles.any():
             continue 
@@ -122,7 +130,7 @@ def frame_features(flow_list):
 
 
 
-def tracks_features(tracks_list):
+def tracks_features(tracks_list, normalisation = False):
     track_means = []
     track_sds = []
     angle_consistency = []
@@ -139,7 +147,7 @@ def tracks_features(tracks_list):
         
         track_vectors = [list(x) for x in track_proper]
 
-        magnitudes, angles = calculateMagnitudes(np.array(track_vectors))
+        magnitudes, angles = calculateMagnitudes(np.array(track_vectors), normalisation = False)
    
         if not magnitudes.any() or not angles.any():
             continue 
@@ -182,7 +190,7 @@ def tracks_features(tracks_list):
 
 
 
-def processVideo(folder_name, load_directory, return_dict, relative = False,):
+def processVideo(folder_name, load_directory, return_dict, normalisation = False):
     try:
         flow_list = bz2.BZ2File(os.path.join(load_directory, folder_name, "Frames.pbz2"), "rb")
         flow_list = cPickle.load(flow_list)
@@ -199,8 +207,8 @@ def processVideo(folder_name, load_directory, return_dict, relative = False,):
     else:
         name = folder_name
 
-    mean_list, direction_sd, sd_list = frame_features(flow_list)
-    track_means, track_sds, angle_consistency, angle_range, oscillation_rate, oscillation_consistency = tracks_features(tracks_list)
+    mean_list, direction_sd, sd_list = frame_features(flow_list, normalisation)
+    track_means, track_sds, angle_consistency, angle_range, oscillation_rate, oscillation_consistency = tracks_features(tracks_list, normalisation)
 
     #NOTE: these feats are combined in a bad way! averaging removes significant trends! FIND A BETTER WAY!
     video_windspeed = name.split("-")[-1]
@@ -260,10 +268,9 @@ def evalSet(opflow_directory):
 
 
         count +=1 
-        if count % 10 == 0:
-            print("Completed {} out of {} folders".format(count, total_folders))
-            print("Taken {} seconds so far, or approximately {} minutes.".format(time.time() - start, (time.time() - start)//60))
-
+        if count % 100 == 0:
+            print("Completed {} out of {} folders in {} seconds, or {} minutes".format(count, total_folders, time.time()-start, (time.time()-start)/60 ))
+        
 
     # Wait for any remaining threads to finish before continuing
     for thread in threads:

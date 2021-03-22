@@ -25,31 +25,6 @@ def clear_dict_items(dictionary):
     return dictionary 
 
 
-def split_data_set(data): 
-    
-    indices_by_force = [[] for x in range(13)] 
-    for index in range(len(data[constants.feature0])):
-        try:
-            indices_by_force[int(data[constants.feature0][index])].append(index)
-        except:
-            print("bad id: " + data[constants.feature0][index])
-
-    training_data = clear_dict_items(data.copy())
-    test_data = clear_dict_items(data.copy())
-    validation_data = clear_dict_items(data.copy())
-    for lst in indices_by_force:
-        random.shuffle(lst)
-        validation_partition = round(len(lst) * constants.validation_set_proportion)
-        test_partition = round(len(lst) * constants.test_set_proportion)
-
-        for feature in data.keys():
-            validation_data[feature] += [data[feature][index] for index in lst[:validation_partition]]
-            test_data[feature] += [data[feature][index] for index in lst[validation_partition:test_partition]]
-            training_data[feature] += [data[feature][index] for index in lst[test_partition:]]
-    
-    return training_data, test_data #,validation_data
-
-
 def code_inputs(sys_args):
     if len(sys_args) > 1:
         try:

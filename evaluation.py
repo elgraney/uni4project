@@ -45,8 +45,11 @@ def test_ranking(load_dir, output = True):
     lenient_stats = dict(sorted(lenient_stats.items(), key=lambda item: item[1]))
     
     if output:
-        for key, value in lenient_stats.items():
-            print(key, value)
+        keys = list(lenient_stats.keys())[-10:]
+        values = list(lenient_stats.values())[-10:]
+        for key, value in zip(keys, values):
+            value = str(round(float(value), 3))
+            print(str(key)+": "+value+"%")
     return exact_stats, lenient_stats
     # TODO NEEDS A WHOLE LOT OF WORK!
 

@@ -195,7 +195,7 @@ if __name__ == "__main__":
     ratio, width, interval, remainder, frame_rate, focus, max_loops, replace = inputs()
 
     # Program processes all videos in directory folder
-    directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "wind footage 2")
+    directory = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "wind footage 3")
     ratio_split = ratio.split("/")
     save_directory = os.path.join(os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Frames"), "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)), str(max_loops)))
     ratio = eval(ratio)
@@ -257,12 +257,11 @@ if __name__ == "__main__":
                     print("ERROR. Processing for file", filename, "failed with error",err)
             
         else:
-            print("skipping", folder)
+            pass
+            #print("skipping", folder)
 
     for thread in threads:
         thread.join()
 
     end=time.time()
-    print("Moment of truth...")
-    print("Time taken:")
-    print(str(end - start))
+    print("Completed preprocessing")

@@ -279,7 +279,7 @@ if __name__ == "__main__":
                 shutil.rmtree(save_folder)
                 os.mkdir(save_folder)
             else: 
-                print("path {} already filled, skipping".format(save_folder))
+                #print("path {} already filled, skipping".format(save_folder))
                 continue
 
         for subscene in os.listdir(scenes_directory):
@@ -296,7 +296,7 @@ if __name__ == "__main__":
             p1.start() 
 
         current_folder +=1 
-        if current_folder % round(total_folders/100) == 0:
+        if current_folder % 100 == 0:
             print("Completed {} out of {} folders in {} seconds, or {} minutes".format(current_folder, total_folders, time.time()-start, (time.time()-start)/60 ))
         
-    print(time.time()-start)
+    #print(time.time()-start)

@@ -25,52 +25,103 @@ def runthrough(preprocessing_code, opflow_code, filename, replace, svm_code):
     os.system(path)
 
 
-def preprocessing_experiment(opflow_flow, svm_code):
-    for width in ["300","400", "500" ]:
-        for interval in ["2", "3", "5"]:
-            for frame_rate in ["2", "3", "4"]:
-                preprocessing_code = "{}_{}_{}_{}_{}_{}_{}_{}".format(str(ratio).split("/")[0], str(ratio).split("/")[1], str(width),str(interval),str(remainder),str(frame_rate),str("".join(focus)), str(max_loops))
-                runthrough(preprocessing_code, opflow_code, filename, replace, svm_code)
 
-
-
-def SVM_experiment(preprocessing_code, opflow_flow):
-    for kernel in ["rbf"]:
-        for gamma in ["auto"]:
-            for C in ["0.001","0.01","0.1","1", "10", "100"]:
-                svm_code = svm_code = "{}_{}_{}".format(str(kernel), str(gamma), str(C))
-                runthrough(preprocessing_code, opflow_code, filename, replace, svm_code)
-
-
-
-def best_opflow():
-    directory = "V:\\Uni4\\SoloProject\\Outputs\\"
+def best_preprep(n = 10):
+    directory = "X:\\uni4\\Solo project 2\\Dataset 3 complete outputs\\"
     best = {}
     for preprocessing_test in os.listdir(directory):
         preprep_dir = os.path.join(directory, preprocessing_test)
         
         for opflow_test in os.listdir(preprep_dir):
-            opflow_dir = os.path.join(directory, opflow_test)
+            opflow_dir = os.path.join(preprep_dir, opflow_test)
 
             for SVM_test in os.listdir(opflow_dir):
-                svm_dir = os.path.join(directory, SVM_test)
-                for test in os.listdir(svm_dir):
-                    _, lenient_stats = evaluation.test_ranking(os.path.join(svm_dir, test), False)
-                    lenient_best = lenient_stats[-1]
-                    try:
-                        if lenient_best > best[opflow_test]:
-                            best[opflow_test] = lenient_best
-                    except KeyError:
-                        best[best_opflow] = lenient_best
-                        
-    print(best)
+                svm_dir = os.path.join(opflow_dir, SVM_test)
+                _, lenient_stats = evaluation.test_ranking(svm_dir, False)
+                lenient_best = list(lenient_stats.values())[-1]
+                try:
+                    if lenient_best > best[preprocessing_test]:
+                        best[preprocessing_test] = lenient_best
+                except KeyError:
+                    best[preprocessing_test] = lenient_best  
+    print(list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.values())[:n])
+    return_best = list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.keys())[:n]
+    return return_best
 
-    return [1]
 
+def best_opflow(n = 10):
+    directory = "X:\\uni4\\Solo project 2\\Dataset 3 complete outputs\\"
+    best = {}
+    for preprocessing_test in os.listdir(directory):
+        preprep_dir = os.path.join(directory, preprocessing_test)
+        
+        for opflow_test in os.listdir(preprep_dir):
+            opflow_dir = os.path.join(preprep_dir, opflow_test)
+
+            for SVM_test in os.listdir(opflow_dir):
+                svm_dir = os.path.join(opflow_dir, SVM_test)
+                _, lenient_stats = evaluation.test_ranking(svm_dir, False)
+                lenient_best = list(lenient_stats.values())[-1]
+                try:
+                    if lenient_best > best[opflow_test]:
+                        best[opflow_test] = lenient_best
+                except KeyError:
+                    best[opflow_test] = lenient_best  
+    print(list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.values())[:n])
+    return_best = list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.keys())[:n]
+    return return_best
+
+
+def best_SVM(n = 10):
+    directory = "X:\\uni4\\Solo project 2\\Dataset 3 complete outputs\\"
+    best = {}
+    for preprocessing_test in os.listdir(directory):
+        preprep_dir = os.path.join(directory, preprocessing_test)
+        
+        for opflow_test in os.listdir(preprep_dir):
+            opflow_dir = os.path.join(preprep_dir, opflow_test)
+
+            for SVM_test in os.listdir(opflow_dir):
+                svm_dir = os.path.join(opflow_dir, SVM_test)
+                _, lenient_stats = evaluation.test_ranking(svm_dir, False)
+                lenient_best = list(lenient_stats.values())[-1]
+                try:
+                    if lenient_best > best[SVM_test]:
+                        best[SVM_test] = lenient_best
+                except KeyError:
+                    best[SVM_test] = lenient_best  
+    print(list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.values())[:n])
+    return_best = list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.keys())[:n]
+    return return_best
+
+
+def best_all(n = 10):
+    directory = "X:\\uni4\\Solo project 2\\Dataset 3 complete outputs\\"
+    best = {}
+    for preprocessing_test in os.listdir(directory):
+        preprep_dir = os.path.join(directory, preprocessing_test)
+        
+        for opflow_test in os.listdir(preprep_dir):
+            opflow_dir = os.path.join(preprep_dir, opflow_test)
+
+            for SVM_test in os.listdir(opflow_dir):
+                svm_dir = os.path.join(opflow_dir, SVM_test)
+                _, lenient_stats = evaluation.test_ranking(svm_dir, False)
+                lenient_best = list(lenient_stats.values())[-1]
+                try:
+                    if lenient_best > best[(preprocessing_test, opflow_test, SVM_test)]:
+                        best[(preprocessing_test, opflow_test, SVM_test)] = lenient_best
+                except KeyError:
+                    best[(preprocessing_test, opflow_test, SVM_test)] = lenient_best  
+
+    print(list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.values())[:n])
+    return_best = list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.keys())[:n]
+    return return_best
 
 
 if __name__ == "__main__":
     directory = os.path.split(os.path.abspath(os.curdir))[0]
+
     filename = "Test"
 
     replace = False
@@ -99,5 +150,16 @@ if __name__ == "__main__":
     opflow_code = "{}_{}_{}_{}_{}_{}".format(str(maxCorners), str(qualityLevel), str(minDistance), str(blockSize), str(winSize),str(maxLevel))
     svm_code = svm_code = "{}_{}_{}".format(str(kernel), str(gamma), str(C))
     
+    # Get 10 best of each code
+    # Mix them
+    # Return best results
 
-    SVM_experiment(preprocessing_code, opflow_code)
+    all_best = best_all(30)
+    print("Running with the following codes:")
+    print(all_best)
+    for tup in all_best:
+        preprocessing_code = tup[0]
+        opflow_code = tup[1]
+        svm_code = tup[2]
+        
+        runthrough(preprocessing_code, opflow_code, filename, replace, svm_code)

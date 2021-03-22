@@ -6,45 +6,40 @@ import sys
 import itertools
 import pickle
 import collections
-from sklearn.svm import SVC
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn import svm
+from sklearn import tree
 import constants
 import evaluation
 import commonFunctions
 import machineLearning as ML
 import numpy as np
 
-# This file handles the creation of a classifier and the assessment of its performance and the performance of each of the training features
-    
-def trainSVM(training_data, training_categories, kernel = 'rbf', gamma = 'auto', C=1):
-    model = svm.SVC(kernel=kernel, gamma=gamma, C=C)
-    model.fit(training_data, training_categories)
-    return model
+# This file handles the creation of a classifier and the assessment of its performance and the performance of each of the training features    
+
+def trainDT(training_data, training_categories, max_depth, min_samples_split, min_samples_leaf):
+    clf = tree.DecisionTreeClassifier(max_depth=max_depth, min_samples_split = min_samples_split, min_samples_leaf = min_samples_leaf)
+    clf.fit(training_data, training_categories)
+    return clf
 
 
-def input_svm_params(args):
+def input_ml_params(args):
     if len(args) > 4:
         try:
-            svm_code = args[4].split("_")
-            kernel = svm_code[0]
-            try:
-                gamma = float(svm_code[1])
-            except:
-                gamma = str(svm_code[1])
-            C = float(svm_code[2])
+            ml_code = args[4].split("_")
+            max_depth = ml_code[0]
+
+            min_samples_split = float(ml_code[1])
+            min_samples_leaf = float(ml_code[2])
 
         except:
             print("Error in input string: using default settings")
     else:
-        kernel = "rbf"
-        gamma = "auto"
-        C = 1
-        pass
-    svm_code = "SVM_{}_{}_{}".format(str(kernel), str(gamma), str(C))
+        max_depth = "rbf"
+        min_samples_split = "auto"
+        min_samples_leaf = 1
 
-    return  svm_code, kernel, gamma, C
+    ml_code = "DT_{}_{}_{}".format(str(kernel), str(gamma), str(C))
+
+    return  ml_code, max_depth, min_samples_split, min_samples_leaf
 
 # TODO make neat and incorporate evaluation.py
 # allow param input
@@ -63,17 +58,16 @@ if __name__ == '__main__':
     start = time.time()
 
     preprocessing_code, opflow_code, filename = commonFunctions.code_inputs(sys.argv)
-    svm_code, kernel, gamma, C = input_svm_params(sys.argv)
-    data, save_dir = ML.setup_output(preprocessing_code, opflow_code, svm_code, filename)
+    ml_code, max_depth, min_samples_split, min_samples_leaf = input_ml_params(sys.argv)
+    data, save_dir = ML.setup_output(preprocessing_code, opflow_code,ml_code,filename)
 
-    #Scale data
+    #Scale data - currently does normal then standard
     data = ML.normalisation(data)
     training_set, test_set = ML.split_data_set(data)
 
     features = list(data.keys())[1:]
     print("Estimating with features {}".format(features))
     procedure = ML.test_order(features)
-    
 
     results = {}
     test_indices = range(len(list(procedure.values())[0])-1)
@@ -84,7 +78,7 @@ if __name__ == '__main__':
     for test_index in test_indices: # Each test (max of 1000)
         test_bools = ML.test_features(procedure, test_index)
         test_id = ML.get_test_id(test_bools, features)
-        test_save_dir = os.path.join(save_dir, svm_code, test_id)
+        test_save_dir = os.path.join(save_dir, ml_code, test_id)
         commonFunctions.makedir(test_save_dir)
         results[test_id] = {}
 
@@ -95,7 +89,7 @@ if __name__ == '__main__':
             training_data, training_categories = ML.filter_data_by_procedure(procedure, training_set, test_index)
             test_data, test_categories = ML.filter_data_by_procedure(procedure, test_set, test_index)
 
-            model = trainSVM(training_data, training_categories)
+            model = trainDT(training_data, training_categories, max_depth, min_samples_split, min_samples_leaf)
 
             test_output += evaluation.test(model, test_data, test_categories)
 
@@ -108,10 +102,8 @@ if __name__ == '__main__':
 
         ML.output_logs(test_output, test_save_dir)
         ML.output_stats(results[test_id], test_save_dir)
-
-
         
-    evaluation.test_ranking(os.path.join(save_dir, svm_code))
+    evaluation.test_ranking(os.path.join(save_dir, ml_code))
 
     end=time.time()
     print("estimation duration:")

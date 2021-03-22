@@ -1,8 +1,11 @@
 There are multiple avenues to pursue.
-1. Clustering on optical flow --> leads to improved features?
-2. Filter items with camera motion out of data set
-3. Buy set up and implement weather station and learning system. Relies heavily on Sam.
-4. Fully explore parameters, features, machine learning and optical flow methods to draw conclusions.
+1. Clustering on optical flow --> leads to improved features? 
+2. Filter items with camera motion out of data set  _/
+3. Buy set up and implement weather station and learning system. Relies heavily on Sam. _/
+4. Fully explore parameters, features, machine learning and optical flow methods to draw conclusions. 
+    4.1 mlp
+    4.2 decision tree 
+5. Normalise opflow and see how it goes.
 
 Note:
 Wind footage 1 = same as last year

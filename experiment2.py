@@ -19,6 +19,7 @@ def runthrough(preprocessing_code, opflow_code, filename, replace, svm_code):
     path = "python 2dOpticalFlow.py "+preprocessing_code+" "+opflow_code+" "+str(replace)
     os.system(path)
     path = "python 2dFeatureSelection.py "+preprocessing_code+" "+opflow_code+" "+filename
+    print(path)
     os.system(path)
     path = "python SVM.py "+preprocessing_code+" "+opflow_code+" "+filename+" "+svm_code
     print(path)
@@ -36,37 +37,57 @@ def preprocessing_experiment(opflow_flow, svm_code):
 
 def SVM_experiment(preprocessing_code, opflow_flow):
     for kernel in ["rbf"]:
-        for gamma in ["auto","0.0001","0.001", "0.01","0.1","1", "10", "100", "1000"]:
-            for C in ["0.001","0.01","0.1","1", "10", "100"]:
+        for gamma in ["auto","scale", "0.0001", "0.01","0.1","1", "10", "100"]:
+            for C in ["0.001","0.01","1", "10"]:
                 svm_code = svm_code = "{}_{}_{}".format(str(kernel), str(gamma), str(C))
                 runthrough(preprocessing_code, opflow_code, filename, replace, svm_code)
 
 
 
-def best_opflow():
+def best_preprep(n = 10):
     directory = "V:\\Uni4\\SoloProject\\Outputs\\"
     best = {}
     for preprocessing_test in os.listdir(directory):
         preprep_dir = os.path.join(directory, preprocessing_test)
         
         for opflow_test in os.listdir(preprep_dir):
-            opflow_dir = os.path.join(directory, opflow_test)
+            opflow_dir = os.path.join(preprep_dir, opflow_test)
 
             for SVM_test in os.listdir(opflow_dir):
-                svm_dir = os.path.join(directory, SVM_test)
-                for test in os.listdir(svm_dir):
-                    _, lenient_stats = evaluation.test_ranking(os.path.join(svm_dir, test), False)
-                    lenient_best = lenient_stats[-1]
-                    try:
-                        if lenient_best > best[opflow_test]:
-                            best[opflow_test] = lenient_best
-                    except KeyError:
-                        best[best_opflow] = lenient_best
-                        
-    print(best)
+                svm_dir = os.path.join(opflow_dir, SVM_test)
+                _, lenient_stats = evaluation.test_ranking(svm_dir, False)
+                lenient_best = list(lenient_stats.values())[-1]
+                try:
+                    if lenient_best > best[preprocessing_test]:
+                        best[preprocessing_test] = lenient_best
+                except KeyError:
+                    best[preprocessing_test] = lenient_best  
+    print(list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.values())[:n])
+    return_best = list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.keys())[:n]
+    return return_best
 
-    return [1]
 
+def best_opflow(n = 10):
+    directory = "V:\\Uni4\\SoloProject\\Outputs\\"
+    best = {}
+    for preprocessing_test in os.listdir(directory):
+        preprep_dir = os.path.join(directory, preprocessing_test)
+        
+        for opflow_test in os.listdir(preprep_dir):
+            opflow_dir = os.path.join(preprep_dir, opflow_test)
+
+            for SVM_test in os.listdir(opflow_dir):
+                svm_dir = os.path.join(opflow_dir, SVM_test)
+                _, lenient_stats = evaluation.test_ranking(svm_dir, False)
+                lenient_best = list(lenient_stats.values())[-1]
+                try:
+                    if lenient_best > best[opflow_test]:
+                        best[opflow_test] = lenient_best
+                except KeyError:
+                    best[opflow_test] = lenient_best  
+    print(list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.values())[:n])
+    return_best = list({k: v for k, v in sorted(best.items(), key=lambda item: item[1], reverse=True)}.keys())[:n]
+    return return_best
 
 
 if __name__ == "__main__":
@@ -100,8 +121,14 @@ if __name__ == "__main__":
     svm_code = svm_code = "{}_{}_{}".format(str(kernel), str(gamma), str(C))
     
 
-    preprocessing_experiment(opflow_code, svm_code)
-    preprep_best = [1] #best_preprep()
+    preprep_best = best_preprep(3)
+
     for preprocessing_code in preprep_best:
-        #for top 5 in preprocessing_flow_exp
-        SVM_experiment(preprocessing_code, opflow_code)
+        opflow_best = best_opflow(3)
+        print("\n\n")
+        print(opflow_best)
+        for opflow_code in opflow_best:
+            #for top 5 in preprocessing_flow_exp
+            SVM_experiment(preprocessing_code, opflow_code)
+
+# 5400 combos

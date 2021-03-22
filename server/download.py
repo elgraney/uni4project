@@ -6,7 +6,7 @@ import time
 
 def download_url(url, save_path, chunk_size=128):
     zip_path = os.path.join(save_path, "all.zip")
-    r = requests.get(url, stream=True, auth=requests.auth.HTTPBasicAuth('craney', 'samsgaylol'))
+    r = requests.get(url, stream=True, auth=requests.auth.HTTPBasicAuth('craney', 'TokenPassword212'))
     print("Downloading")
     with open(zip_path, 'wb') as fd:
         for chunk in r.iter_content(chunk_size=chunk_size):
@@ -17,7 +17,7 @@ def download_url(url, save_path, chunk_size=128):
 
 def download_weather(url, save_path, chunk_size=128):
     weather_path = os.path.join(save_path, "weather.csv")
-    r = requests.get(url, stream=True, auth=requests.auth.HTTPBasicAuth('craney', 'samsgaylol'))
+    r = requests.get(url, stream=True, auth=requests.auth.HTTPBasicAuth('craney', 'TokenPassword212'))
     with open(weather_path, 'wb') as fd:
         for chunk in r.iter_content(chunk_size=chunk_size):
             fd.write(chunk)
@@ -76,6 +76,8 @@ def annotate_videos(path):
                         original_file = os.path.join(path,dir_file)
                         name = dir_file.split(".")[0]
                         extension = dir_file.split(".")[1]
+
+                        
                         wind_speed = round(eval(weather_data[minimum][0])) # avg windspeed, ROUNDED to int
                         new_name = name +"--"+str(wind_speed)+"."+extension
                         print(new_name)
@@ -110,6 +112,7 @@ def read_weather(csv_path):
 if __name__ == "__main__":
     download_url("http://samsga.me/craney/all.zip",  "V:\\Uni4\\SoloProject\\home_camera")
     download_weather("http://samsga.me/craney/weather.csv",  "V:\\Uni4\\SoloProject\\home_camera")
+    print("Extracting")
     extract("V:\\Uni4\\SoloProject\\home_camera")
     annotate_videos("V:\\Uni4\\SoloProject\\home_camera")
     
