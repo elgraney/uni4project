@@ -124,8 +124,7 @@ def normalisation(data):
     return data
 
 
-def split_data_set(data, equal = False): 
-    
+def split_data_set(data, equal = True): 
     indices_by_force = [[] for x in range(13)] 
     for index in range(len(data[constants.feature0])):
         try:
@@ -138,17 +137,14 @@ def split_data_set(data, equal = False):
     validation_data = commonFunctions.clear_dict_items(data.copy())
     if equal:
         smallest_catgory = min([len(lst) for lst in indices_by_force])
-        training_per_force = round((len(data[constants.feature0]) * constants.training_set_proportion) / 13)
+        training_per_force = round(smallest_catgory * constants.training_set_proportion)
         validation_partition = 0
-        if smallest_catgory > training_per_force:
-            for lst in indices_by_force:
-                random.shuffle(lst)
-                for feature in data.keys():
-                    validation_data[feature] += [data[feature][index] for index in lst[:validation_partition]]
-                    training_data[feature] += [data[feature][index] for index in lst[validation_partition:training_per_force]]
-                    test_data[feature] += [data[feature][index] for index in lst[training_per_force:smallest_catgory]]
-        else:
-            print("Unbalanced categories. Cannot produce fair training set. Adjust training set size.")
+        for lst in indices_by_force:
+            random.shuffle(lst)
+            for feature in data.keys():
+                validation_data[feature] += [data[feature][index] for index in lst[:validation_partition]]
+                training_data[feature] += [data[feature][index] for index in lst[validation_partition:training_per_force]]
+                test_data[feature] += [data[feature][index] for index in lst[training_per_force:smallest_catgory]]
 
     else:
         for lst in indices_by_force:
