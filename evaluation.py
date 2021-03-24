@@ -103,6 +103,14 @@ def average_difference(test_output):
     return vector_diff / len(test_output), scalar_diff / len(test_output)
 
 
+def MS_difference(test_output):
+    diff = 0
+    for item in test_output:
+        diff += (item["estimate"]-item["actual"])**2
+
+    return diff / len(test_output)
+
+
 def plot_differences_distribution(test_output, save_dir):
     plt.clf()
 

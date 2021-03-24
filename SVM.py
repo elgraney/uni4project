@@ -103,6 +103,7 @@ if __name__ == '__main__':
         results[test_id]["exact_accuracy"] = evaluation.exact_accuracy(test_output)
         results[test_id]["lenient_accuracy"] = evaluation.lenient_accuracy(test_output)
         results[test_id]["vector_differences"], results[test_id]["scalar_differences"] = evaluation.average_difference(test_output)
+        results[test_id]["mean_squared_differences"] = evaluation.MS_difference(test_output)
         #results[test_id]["differences_distribution"] = evaluation.plot_differences_distribution(test_output, test_save_dir)
         #results[test_id]["wind_force_differences_distribution"] = evaluation.plot_differences_by_wind_force(test_output, test_save_dir)
 
