@@ -64,11 +64,13 @@ if __name__ == '__main__':
     data, save_dir = ML.setup_output(preprocessing_code, opflow_code,ml_code,filename)
 
     #Scale data - currently does normal then standard
+
     data = ML.normalisation(data)
     training_set, test_set = ML.split_data_set(data)
 
     features = list(data.keys())[1:]
     print("Estimating with features {}".format(features))
+    
     procedure = ML.test_order(features)
 
     results = {}

@@ -231,6 +231,7 @@ def inputs():
 
 
 if __name__ == "__main__":
+    print("Beginning optical flow extraction")
     start=time.time()
 
     #TODO input string of preprocessing args

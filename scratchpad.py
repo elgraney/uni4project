@@ -5,8 +5,6 @@ import os
 import time
 import evaluation
 
-start=time.time()
-
-evaluation.test_ranking("V:\\Uni4\\SoloProject\\Outputs\\4_3_500_5_3_10_C_False_500_0.001_10_10_25_3\\tests")
-
-print(time.time()-start)
+load_dir = "V:\\Uni4\\SoloProject\\DataSets\\16_9_300_10_3_3_C_1\\500_0.001_10_10_50_3\\test"
+data = pickle.load( open( load_dir, "rb") )
+print(data)

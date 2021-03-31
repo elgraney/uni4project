@@ -150,6 +150,7 @@ def tracks_features(tracks_list, normalisation = False):
         magnitudes, angles = calculateMagnitudes(np.array(track_vectors), normalisation = False)
    
         if not magnitudes.any() or not angles.any():
+            print("No useful optical flow, skipping")
             continue 
 
         angle_differences = angleDifference(angles)
@@ -197,6 +198,7 @@ def processVideo(folder_name, load_directory, return_dict, normalisation = False
         tracks_list = bz2.BZ2File(os.path.join(load_directory, folder_name, "Tracks.pbz2"), "rb")
         tracks_list = cPickle.load(tracks_list)
 
+    
 
     except:
         print("failed to load file {}".format(os.path.join(load_directory, folder_name)))
@@ -209,7 +211,6 @@ def processVideo(folder_name, load_directory, return_dict, normalisation = False
 
     mean_list, direction_sd, sd_list = frame_features(flow_list, normalisation)
     track_means, track_sds, angle_consistency, angle_range, oscillation_rate, oscillation_consistency = tracks_features(tracks_list, normalisation)
-
     #NOTE: these feats are combined in a bad way! averaging removes significant trends! FIND A BETTER WAY!
     video_windspeed = name.split("-")[-1]
     video_features = {} 
@@ -286,6 +287,7 @@ def evalSet(opflow_directory):
 
 if __name__ == '__main__':
     start = time.time()
+    print("Beginning Feature Selection")
 
     preprocessing_code, opflow_code, filename = commonFunctions.code_inputs(sys.argv)
     

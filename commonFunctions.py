@@ -42,3 +42,31 @@ def code_inputs(sys_args):
         filename = "default"
 
     return preprocessing_code, opflow_code, filename
+
+def mph_to_beaufort(mph):
+    if mph < 1:
+        return 0
+    elif mph < 4:
+        return 1
+    elif mph < 8:
+        return 2
+    elif mph < 13:
+        return 3
+    elif mph < 19:
+        return 4
+    elif mph < 25:
+        return 5
+    elif mph < 32:
+        return 6
+    elif mph < 39:
+        return 7
+    elif mph < 47:
+        return 8
+    elif mph < 55:
+        return 9
+    elif mph < 64:
+        return 10
+    elif mph < 73:
+        return 11
+    else:
+        return 12
