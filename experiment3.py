@@ -154,7 +154,7 @@ if __name__ == "__main__":
     # Mix them
     # Return best results
 
-    all_best = best_all(30)
+    all_best = best_all(50)
     print("Running with the following codes:")
     print(all_best)
     for tup in all_best:

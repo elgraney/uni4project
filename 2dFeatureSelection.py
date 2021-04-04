@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import collections
 import statistics 
 import os
@@ -150,7 +149,7 @@ def tracks_features(tracks_list, normalisation = False):
         magnitudes, angles = calculateMagnitudes(np.array(track_vectors), normalisation = False)
    
         if not magnitudes.any() or not angles.any():
-            print("No useful optical flow, skipping")
+            #print("No useful optical flow, skipping")
             continue 
 
         angle_differences = angleDifference(angles)

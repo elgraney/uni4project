@@ -179,7 +179,7 @@ def optical_flow(frame_dir, flow_folder, subscene, feature_params, lk_params):
     adjusted_tracks_list =[]
     for track in complete_tracks:
         if len(track) > 2:
-            framewise_tracks, adjusted_track_vectors, is_valid = format_track(track, framewise_tracks, [])
+            framewise_tracks, adjusted_track_vectors, is_valid = format_track(track, framewise_tracks, [], True)
             ''' MOTION CORRECTION DISABLED
             framewise_tracks, adjusted_track_vectors = format_track(track, framewise_tracks, transforms)
             '''

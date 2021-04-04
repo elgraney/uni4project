@@ -4,6 +4,8 @@ import os
 import commonFunctions
 import numpy as np
 import pylab
+import statistics
+import pickle
 
 # How do we deal with the data?
 # 1. Store training and test separately
@@ -30,6 +32,35 @@ def test_order(features):
     return feature_dict
 
 
+def MME_test_ranking(load_dir, output = True):
+    # Feature search takes place in the model selection phase and the best 10 or so models are saved. 
+    # So delete this
+    exact_stats = {}
+    lenient_stats = {}
+    MME_stats = {}
+    for test in os.listdir(load_dir):
+        with open(os.path.join(load_dir, test, "Statistics.txt")) as stats_file:
+            file_id = test
+            exact_stats[file_id] = stats_file.readline().split(" ")[1]
+            lenient_stats[file_id] = stats_file.readline().split(" ")[1]
+            print(stats_file.readline())
+            print(stats_file.readline())
+            MME_stats[file_id] = stats_file.readline().split(" ")[1]
+
+    exact_stats = dict(sorted(exact_stats.items(), key=lambda item: item[1]))
+    lenient_stats = dict(sorted(lenient_stats.items(), key=lambda item: item[1]))
+    MME_stats = dict(sorted(MME_stats.items(), key=lambda item: item[1]))
+    
+    if output:
+        keys = list(MME_stats.keys())[-10:]
+        for key in keys:
+            value = str(round(float(MME_stats[key]), 3))
+            acc = str(round(float(lenient_stats[key]), 3))
+            print(str(key)+": "+value+", "+acc+"%")
+    return exact_stats, lenient_stats
+    # TODO NEEDS A WHOLE LOT OF WORK!
+
+
 def test_ranking(load_dir, output = True):
     # Feature search takes place in the model selection phase and the best 10 or so models are saved. 
     # So delete this
@@ -51,7 +82,6 @@ def test_ranking(load_dir, output = True):
             value = str(round(float(value), 3))
             print(str(key)+": "+value+"%")
     return exact_stats, lenient_stats
-    # TODO NEEDS A WHOLE LOT OF WORK!
 
 
 def test(model, test_data, test_categories):
@@ -139,6 +169,37 @@ def plot_differences_by_wind_force(test_output, save_dir):
     plt.plot(plot)
     plt.savefig(os.path.join(save_dir, "Average Differences organised by Force"))
     return plot
+
+def feature_average_by_category(path):
+    data = pickle.load( open( path, "rb") )
+
+    stats_by_force = {}
+
+    for feature in data.keys():
+        if feature != "category":
+            stats_by_force[feature] = [[] for x in range(13)] # indices are the force
+
+    for index in range(len(data[list(data.keys())[0]])):
+ 
+        force = data["category"][index]
+        for feature in data.keys():
+            if feature != "category":
+                try:
+                    stats_by_force[feature][eval(force)].append(data[feature][index])
+                except Exception:
+                    continue
+
+    for feature in stats_by_force.keys():
+        for force in range(13):
+            if stats_by_force[feature][force] != []:
+                stats_by_force[feature][force] = statistics.mean(stats_by_force[feature][force])
+            else: stats_by_force[feature][force] = 0
+
+    for stat in stats_by_force.keys():
+        print(stat)
+        plt.plot(stats_by_force[stat])
+        plt.show()
+
  
 
 if __name__ == "__main__":

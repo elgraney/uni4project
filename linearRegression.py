@@ -12,117 +12,59 @@ import evaluation
 import commonFunctions
 from sklearn import preprocessing
 import numpy as np
-import machineLearning
-
-def filter_data_by_procedure(procedure, data, test_index):
-    '''
-    inputs:
-    procedure: an array of booleans representing the features and their inclusion
-    data: the dictionary of data items organised by feature
-
-    Data is organised by feature, but needs to be organised by item for training.
-    This function reorganises data, removing excluded features and extracting the category of each item.
-    '''
-    new_data = []
-    categories = []
-    for index in range(len(data[constants.feature0])): #for every item of data
-        data_item = []
-        for feature in data: # for every key / feature
-            if feature != constants.feature0: # if the key is not category
-                if procedure[feature][test_index]: # if the test says to include this feature
-                    data_item.append(data[feature][index]) # include this feature
-                    
-        categories.append(data[constants.feature0][index])
-        new_data.append(data_item)
-    return new_data, categories
+import machineLearning as ML
 
 
-def test_order(features):
-    '''
-    Produce a list of booleans to represent every possible combination of features
-    '''
-    feature_dict = {}
-    for feature in features:
-        if feature == "mean": # might need to reword if feature names change
-            feature_dict[feature] = [True]
-        else:
-            feature_dict[feature] = [False]
-
-    return feature_dict
-
-
-def get_test_id():
-    test_id = "Logistic Regression with mean"
-
-    return test_id
-
-
-def test_features(procedure, test_index):
-    test = []
-    for key in procedure.keys():
-        if key!="category":
-            test.append(procedure[key][test_index])
-    return test
 
 
 def trainRegressor(training_data, training_categories):
-    model = LogisticRegression(random_state = 0)
+    model = LogisticRegression()
 
     model.fit(training_data, training_categories)
     return model
 
+def input_regression_params(args):
+    
+    ml_code = "Logistic_Regression"
 
-def output_logs(logs, save_dir):
-    log_string = "\n".join(str(log) for log in logs)
-    commonFunctions.text_output(log_string, "Logs", save_dir)
-
-
-def output_stats(test_results, save_dir):
-    output_string = ""
-    for key, value in test_results.items():
-        output_string += "\n{}: {}".format(key, value)
-
-    commonFunctions.text_output(output_string[1:], "Statistics", save_dir)
-
-
+    return  ml_code
 
 if __name__ == '__main__':
     start = time.time()
 
-    save_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Outputs", "Baseline")
-    commonFunctions.makedir(save_dir)
+    preprocessing_code, opflow_code, filename = commonFunctions.code_inputs(sys.argv)
+    ml_code = input_regression_params(sys.argv)
+    data, save_dir = ML.setup_output(preprocessing_code, opflow_code, ml_code, filename)
 
-    data_set_dir = "V:\\Uni4\\SoloProject\\DataSets\\4_3_500_5_3_10_C_False_500_0.001_10_10_25_3\\2" # temp hard-coded
-    data = pickle.load( open( data_set_dir, "rb") )
-
-    data = machineLearning.standard_scale(data)
-
-    
-    training_set, test_set = commonFunctions.split_data_set(data)
+    #Scale data
+    data = ML.normalisation(data)
+    training_set, test_set = ML.split_data_set(data, False)
 
     features = list(data.keys())[1:]
     print("Estimating with features {}".format(features))
     # We just want category and average magnitude
     # Category, magnitude pairs
 
-    procedure = test_order(features)
+    procedure = ML.test_order(features)
 
     
     results = {}
-
-    if True: #lazy indent
-        test_bools = test_features(procedure, 0) # only one test
-        test_id = get_test_id()
-        test_save_dir = os.path.join(save_dir, test_id)
+    test_indices = range(len(list(procedure.values())[0])-1)
+    for test_index in test_indices: # Each test (max of 1000)
+        test_bools = ML.test_features(procedure, test_index)
+        test_id = ML.get_test_id(test_bools, features)
+        test_save_dir = os.path.join(save_dir, ml_code, test_id)
         commonFunctions.makedir(test_save_dir)
         results[test_id] = {}
 
+
         test_output = []
-        for repeat in range(constants.training_repetitions-4):
+        for repeat in range(constants.training_repetitions):
             
 
-            training_data, training_categories = filter_data_by_procedure(procedure, training_set, 0)
-            test_data, test_categories = filter_data_by_procedure(procedure, test_set, 0)
+            training_data, training_categories = ML.filter_data_by_procedure(procedure, training_set, test_index)
+            test_data, test_categories = ML.filter_data_by_procedure(procedure, test_set, test_index)
+
 
             model = trainRegressor(training_data, training_categories)
 
@@ -132,18 +74,14 @@ if __name__ == '__main__':
         results[test_id]["exact_accuracy"] = evaluation.exact_accuracy(test_output)
         results[test_id]["lenient_accuracy"] = evaluation.lenient_accuracy(test_output)
         results[test_id]["vector_differences"], results[test_id]["scalar_differences"] = evaluation.average_difference(test_output)
+        results[test_id]["mean_squared_differences"] = evaluation.MS_difference(test_output)
         #results[test_id]["differences_distribution"] = evaluation.plot_differences_distribution(test_output, test_save_dir)
         #results[test_id]["wind_force_differences_distribution"] = evaluation.plot_differences_by_wind_force(test_output, test_save_dir)
 
-    output_logs(test_output, test_save_dir)
-    output_stats(results[test_id], test_save_dir)
-
-
+        ML.output_logs(test_output, test_save_dir)
+        ML.output_stats(results[test_id], test_save_dir)
     
-    #sorted_results = collections.OrderedDict(sorted(results.items(), key=lambda x: x[1]))
-    #for key,value in sorted_results.items():
-        #output_string = "\nTest {}: Exact Accuracy={}, Lenient Accuracy={}, Total differences/total items={}".format(key, value[0], value[1], value[2])
-        #text_output(output_string, "Best", save_dir, features)
+    evaluation.test_ranking(os.path.join(save_dir, ml_code))
         
 
     end=time.time()
