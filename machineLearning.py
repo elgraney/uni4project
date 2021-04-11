@@ -7,10 +7,20 @@ import os
 import pickle
 import random
 
+def fix_NAN(value):
+    for index in range(len(value)):
+        try:
+            eval(str(value[index]))
+        except NameError:
+            print(value[index])
+            value[index] = 0
+
+    return value
 
 def standard_scale(data):
     for key, value in data.items():
         if key != constants.feature0:
+            fix_NAN(value)
             scaler = preprocessing.StandardScaler().fit(np.array(value).reshape(-1,1))
             data[key] = list((scaler.transform(np.array(value).reshape(-1,1))).flatten())
     return data
@@ -19,6 +29,7 @@ def standard_scale(data):
 def normal_scale(data):
     for key, value in data.items():
         if key != constants.feature0:
+            fix_NAN(value)
             scaler = preprocessing.MinMaxScaler().fit(np.array(value).reshape(-1,1))
             data[key] = list((scaler.transform(np.array(value).reshape(-1,1))).flatten())
     return data
@@ -109,7 +120,7 @@ def setup_output(preprocessing_code, opflow_code, svm_code, filename):
     if not os.path.exists(os.path.join(save_dir, svm_code)):
         commonFunctions.makedir(os.path.join(save_dir, svm_code))
     else:
-        print("Save directory already exists")
+        print("Save directory already exists with code", svm_code)
         exit()
 
     load_dir = os.path.join(os.path.split(os.path.abspath(os.curdir))[0], "Datasets", preprocessing_code, opflow_code, filename)

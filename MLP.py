@@ -12,11 +12,12 @@ import evaluation
 import commonFunctions
 import machineLearning as ML
 import numpy as np
+import warnings
 
 # This file handles the creation of a classifier and the assessment of its performance and the performance of each of the training features    
 
-def trainMLP(training_data, training_categories):
-    clf = MLPClassifier()
+def trainMLP(training_data, training_categories, alpha, n):
+    clf = MLPClassifier(solver="lbfgs", alpha=alpha, hidden_layer_sizes=(n, ), max_iter=2000, tol= 0.001)
     clf.fit(training_data, training_categories)
     return clf
 
@@ -25,23 +26,17 @@ def input_ml_params(args):
     if len(args) > 4:
         try:
             ml_code = args[4].split("_")
-            kernel = ml_code[0]
-            try:
-                gamma = float(ml_code[1])
-            except:
-                gamma = str(ml_code[1])
-            C = float(ml_code[2])
-
+            alpha = float( ml_code[0])
+            n = int(ml_code[1])
         except:
             print("Error in input string: using default settings")
     else:
-        kernel = "rbf"
-        gamma = "auto"
-        C = 1
-        pass
-    ml_code = "MLP_{}_{}_{}".format(str(kernel), str(gamma), str(C))
+        alpha = 0.0001
+        n = 100
 
-    return  ml_code, kernel, gamma, C
+    ml_code = "MLP_{}_{}".format(str(alpha), str(n))
+
+    return  ml_code, alpha, n
 
 # TODO make neat and incorporate evaluation.py
 # allow param input
@@ -58,9 +53,9 @@ def input_ml_params(args):
 
 if __name__ == '__main__':
     start = time.time()
-
+    warnings.filterwarnings("ignore")
     preprocessing_code, opflow_code, filename = commonFunctions.code_inputs(sys.argv)
-    ml_code, kernel, gamma, C = input_ml_params(sys.argv)
+    ml_code, alpha, n = input_ml_params(sys.argv)
     data, save_dir = ML.setup_output(preprocessing_code, opflow_code,ml_code,filename)
 
     #Scale data - currently does normal then standard
@@ -87,14 +82,13 @@ if __name__ == '__main__':
         results[test_id] = {}
 
         test_output = []
-        for repeat in range(constants.training_repetitions):
+        for repeat in range(int(constants.training_repetitions/2)):
             
 
             training_data, training_categories = ML.filter_data_by_procedure(procedure, training_set, test_index)
             test_data, test_categories = ML.filter_data_by_procedure(procedure, test_set, test_index)
-
-            model = trainMLP(training_data, training_categories)
-
+            
+            model = trainMLP(training_data, training_categories, alpha, n)
             test_output += evaluation.test(model, test_data, test_categories)
 
         #eval metrics

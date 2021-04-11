@@ -25,19 +25,22 @@ def input_ml_params(args):
     if len(args) > 4:
         try:
             ml_code = args[4].split("_")
-            max_depth = ml_code[0]
+            try:
+                max_depth = int(ml_code[0])
+            except:
+                max_depth = None
 
-            min_samples_split = float(ml_code[1])
-            min_samples_leaf = float(ml_code[2])
+            min_samples_split = 2
+            min_samples_leaf = 1
 
         except:
             print("Error in input string: using default settings")
     else:
-        max_depth = "rbf"
+        max_depth = None
         min_samples_split = "auto"
         min_samples_leaf = 1
 
-    ml_code = "DT_{}_{}_{}".format(str(kernel), str(gamma), str(C))
+    ml_code = "DT_{}_{}_{}".format(str(max_depth), str(min_samples_split), str(min_samples_leaf))
 
     return  ml_code, max_depth, min_samples_split, min_samples_leaf
 

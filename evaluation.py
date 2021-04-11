@@ -6,6 +6,7 @@ import numpy as np
 import pylab
 import statistics
 import pickle
+from scipy.signal import savgol_filter
 
 # How do we deal with the data?
 # 1. Store training and test separately
@@ -32,35 +33,36 @@ def test_order(features):
     return feature_dict
 
 
-def MME_test_ranking(load_dir, output = True):
+def test_ranking(load_dir, output = True):
     # Feature search takes place in the model selection phase and the best 10 or so models are saved. 
     # So delete this
     exact_stats = {}
     lenient_stats = {}
-    MME_stats = {}
+    MSE_stats = {}
     for test in os.listdir(load_dir):
         with open(os.path.join(load_dir, test, "Statistics.txt")) as stats_file:
             file_id = test
             exact_stats[file_id] = stats_file.readline().split(" ")[1]
             lenient_stats[file_id] = stats_file.readline().split(" ")[1]
-            print(stats_file.readline())
-            print(stats_file.readline())
-            MME_stats[file_id] = stats_file.readline().split(" ")[1]
+            stats_file.readline()
+            stats_file.readline()
+            MSE_stats[file_id] = stats_file.readline().split(" ")[1]
 
-    exact_stats = dict(sorted(exact_stats.items(), key=lambda item: item[1]))
-    lenient_stats = dict(sorted(lenient_stats.items(), key=lambda item: item[1]))
-    MME_stats = dict(sorted(MME_stats.items(), key=lambda item: item[1]))
+    exact_stats = dict(sorted(exact_stats.items(), key=lambda item: eval(item[1])))
+    lenient_stats = dict(sorted(lenient_stats.items(), key=lambda item: eval(item[1])))
+    MSE_stats = dict(sorted(MSE_stats.items(), reverse=True, key=lambda item: eval(item[1])))
+
     
     if output:
-        keys = list(MME_stats.keys())[-10:]
+        keys = list(MSE_stats.keys())[-10:]
         for key in keys:
-            value = str(round(float(MME_stats[key]), 3))
+            value = str(round(float(MSE_stats[key]), 3))
             acc = str(round(float(lenient_stats[key]), 3))
             print(str(key)+": "+value+", "+acc+"%")
-    return exact_stats, lenient_stats
+    return exact_stats, lenient_stats, MSE_stats
     # TODO NEEDS A WHOLE LOT OF WORK!
 
-
+'''
 def test_ranking(load_dir, output = True):
     # Feature search takes place in the model selection phase and the best 10 or so models are saved. 
     # So delete this
@@ -82,6 +84,8 @@ def test_ranking(load_dir, output = True):
             value = str(round(float(value), 3))
             print(str(key)+": "+value+"%")
     return exact_stats, lenient_stats
+'''
+
 
 
 def test(model, test_data, test_categories):
@@ -197,17 +201,147 @@ def feature_average_by_category(path):
 
     for stat in stats_by_force.keys():
         print(stat)
-        plt.plot(stats_by_force[stat])
+        toplot = savgol_filter(stats_by_force[stat], 3,2)
+        plt.xlabel("Wind Force")
+        plt.ylabel("Average feature value")
+        plt.plot(toplot)
         plt.show()
 
- 
+def feature_index(feat):
+    if feat == "mean" or feat == "ean":
+        return 0
+    elif feat == "meanSD" or feat == "eanSD":
+        return 1
+    elif feat == "sd" or feat == "d":
+        return 2
+    elif feat == "sdSD" or feat == "dSD":
+        return 3
+    elif feat == "dirSd" or feat == "irSd":
+        return 4
+    elif feat == "dirSdSD" or feat == "irSdSD":
+        return 5
+    elif feat == "trMeans" or feat == "rMeans":
+        return 6
+    elif feat == "trMeansSD" or feat == "rMeansSD":
+        return 7
+    elif feat == "trSds" or feat == "rSds":
+        return 8
+    elif feat == "trSdsSD" or feat == "rSdsSD":
+        return 9
+    elif feat == "aglCons" or feat == "glCons":
+        return 10
+    elif feat == "aglConsSD" or feat == "glConsSD":
+        return 11
+    elif feat == "aglRng" or feat == "glRng":
+        return 12 
+    elif feat == "aglRngSD" or feat == "glRngSD":
+        return 13
+    elif feat == "oscRate" or feat == "scRate":
+        return 14 
+    elif feat == "oscRateSD" or feat == "scRateSD":
+        return 15
+    elif feat == "oscCons" or feat == "scCons":
+        return 16 
+    elif feat == "oscConsSD" or feat == "scConsSD":
+        return 17
+    else:
+        print(feat)
+        print("lookup failed")
+        return 99
+
+def index_to_feat(index):
+    if index == 0:
+        return "mean"
+    elif index == 1:
+        return "meanSD"
+    elif index == 2:
+        return "sd"
+    elif index == 3:
+        return "sdSD"
+    elif index == 4:
+        return "dirSd"
+    elif index == 5:
+        return "dirSdSD"
+    elif index == 6:
+        return "trMeans"
+    elif index == 7:
+        return "trMeansSD"
+    elif index == 8:
+        return "trSds"
+    elif index == 9:
+        return "trSdsSD"
+    elif index == 10:
+        return "aglCons"
+    elif index == 11:
+        return "aglConsSD"
+    elif index == 12:
+        return "aglRng"
+    elif index == 13:
+        return "aglRngSD"
+    elif index == 14:
+        return "oscRate"
+    elif index == 15:
+        return "oscRateSD"
+    elif index == 16:
+        return "oscCons"
+    elif index == 17:
+        return "oscConsSD"
+    else:
+        print(index)
+        print("lookup failed")
+        return 99
+
+
+def feature_ranking(load_dir, output = True):
+    exact_stats = {}
+    lenient_stats = {}
+    MSE_stats = {}
+    features = {}
+    for test in os.listdir(load_dir):
+        with open(os.path.join(load_dir, test, "Statistics.txt")) as stats_file:
+            file_id = test
+            features[file_id] = file_id.split(",")
+            exact_stats[file_id] = stats_file.readline().split(" ")[1]
+            lenient_stats[file_id] = stats_file.readline().split(" ")[1]
+            stats_file.readline()
+            stats_file.readline()
+            MSE_stats[file_id] = stats_file.readline().split(" ")[1]
+
+    feature_mse_average = np.zeros(18, dtype = np.float32 )
+    feature_accuracy_average = np.zeros(18, dtype = np.float32)
+    feature_count = np.zeros(18, dtype = np.float32)
+    for key in features.keys():
+        for feat in features[key]:
+            index = feature_index(feat)
+            feature_count[index] += 1
+            feature_mse_average[index] += float(MSE_stats[key])
+            feature_accuracy_average[index] += float(lenient_stats[key])
+
+    print("MSE average per stat:")
+    for index in range(len(feature_count)):
+        print(str(index_to_feat(index)), str(feature_mse_average[index]/feature_count[index]))
+        print(str(index_to_feat(index)), str(feature_accuracy_average[index]/feature_count[index]))
+
+    # Present best
+    exact_stats = dict(sorted(exact_stats.items(), key=lambda item: eval(item[1])))
+    lenient_stats = dict(sorted(lenient_stats.items(), key=lambda item: eval(item[1])))
+    MSE_stats = dict(sorted(MSE_stats.items(), reverse=True, key=lambda item: eval(item[1])))
+
+    if output:
+        keys = list(MSE_stats.keys())[-10:]
+        for key in keys:
+            value = str(round(float(MSE_stats[key]), 3))
+            acc = str(round(float(lenient_stats[key]), 3))
+            print(str(key)+": "+value+", "+acc+"%")
+    return exact_stats, lenient_stats, MSE_stats
+
 
 if __name__ == "__main__":
-    directory = "V:\\Uni4\\SoloProject\\Outputs\\"
+    directory = "V:\\Uni4\\SoloProject\\Outputs 2\\"
 
     test_code_bests = {}
-    best = {} # key = param index, value = (value, accuracy)
-
+    best_MSE = {} # key = param index, value = (value, accuracy)
+    best_len_acc = {}
     for prepep_test in os.listdir(directory):
         if "v" not in prepep_test and prepep_test != "Unique_Code":
             
@@ -216,38 +350,77 @@ if __name__ == "__main__":
                 for SVM_test in os.listdir(os.path.join(directory, prepep_test,  opflow_test)):
                     params = prepep_test.split("\\")[-1].split("_") + opflow_test.split("_") + SVM_test.split("_")
                     #print(params)
-                    exact_stats, lenient_stats = test_ranking(os.path.join(directory, prepep_test,  opflow_test, SVM_test), False)
+                    exact_stats, lenient_stats, MSE_stats = test_ranking(os.path.join(directory, prepep_test,  opflow_test, SVM_test), False)
+
                     try:
-                        last = list(lenient_stats.keys())[-1]
+                        last_MSE = list(MSE_stats.keys())[-1]
+                        last_len = list(lenient_stats.keys())[-1]
                     except:
                         print(os.path.join(directory, prepep_test,  opflow_test, SVM_test))
                         exit()
                     #print(last, lenient_stats[last])
 
-                    test_code_bests[(prepep_test+"__"+opflow_test+"__"+SVM_test)] = lenient_stats[last]
+                    test_code_bests[(prepep_test+"__"+opflow_test+"__"+SVM_test)] = MSE_stats[last_MSE]
                     
                     for param_index in range(len(params)):
                         try:
-                            best[param_index].append((params[param_index], lenient_stats[last]))
+                            best_MSE[param_index].append((params[param_index], MSE_stats[last_MSE]))
+                            best_len_acc[param_index].append((params[param_index], lenient_stats[last_len]))
                         except:
-                            best[param_index] = [(params[param_index], lenient_stats[last])]
+                            best_MSE[param_index] = [(params[param_index], MSE_stats[last_MSE])]
+                            best_len_acc[param_index]= [(params[param_index], lenient_stats[last_len])]
     
     test_code_bests =  {k: v for k, v in sorted(test_code_bests.items(), key=lambda item: item[1])}
+    print(list(test_code_bests.keys())[:10])
+    print(list(test_code_bests.values())[:10])
     
+    for key, value in best_MSE.items():
+        sorted_value = sorted(value, key=lambda val: eval(val[1]))  
 
-    for key, value in best.items():
-        sorted_value = sorted(value, key=lambda val: val[1])  
-        
         x = [item[0] for item in sorted_value]
-        if len(set(x))> 1:
+        setx = set(x)
+        if len(setx)> 1:
             y = [round(eval(item[1]),3) for item in sorted_value]
 
             plt.scatter(x, y)
-            print(x, y)
-
 
             plt.title(("Param", key))
-            plt.show()
-                
-    print(test_code_bests)        
+            global_total = []
+            for param in setx:
+                param_acc_total = [eval(y[1]) for y in sorted_value if y[0] == param]
+                param_avg = sum(param_acc_total)/len(param_acc_total)
+                print(param, param_avg)
+                global_total += param_acc_total
+            global_avg = sum(global_total)/len(global_total)
+            print("Global avg:", global_avg,"\n")
             
+            plt.show()
+
+            
+
+    for key, value in best_len_acc.items():
+        sorted_value = sorted(value, key=lambda val: eval(val[1]))  
+
+        x = [item[0] for item in sorted_value]
+        setx = set(x)
+        if len(setx)> 1:
+            y = [round(eval(item[1]),3) for item in sorted_value]
+
+            plt.scatter(x, y)
+
+            plt.title(("Param", key))
+            global_total = []
+            for param in setx:
+                param_acc_total = [eval(y[1]) for y in sorted_value if y[0] == param]
+                param_avg = sum(param_acc_total)/len(param_acc_total)
+                print(param, param_avg)
+                global_total += param_acc_total
+            global_avg = sum(global_total)/len(global_total)
+            print("Global avg:", global_avg,"\n")
+                
+            plt.show()
+
+            
+
+    #print(test_code_bests)        
+    #print(best)

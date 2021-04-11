@@ -20,7 +20,7 @@ def runthrough(preprocessing_code, opflow_code, filename, replace, svm_code):
     os.system(path)
     path = "python 2dFeatureSelection.py "+preprocessing_code+" "+opflow_code+" "+filename
     os.system(path)
-    path = "python linearRegression.py "+preprocessing_code+" "+opflow_code+" "+filename+" "+svm_code
+    path = "python linearRegression.py "+preprocessing_code+" "+opflow_code+" "+filename+" Logistic_Regression"
     print(path)
     os.system(path)
 
@@ -54,5 +54,31 @@ if __name__ == "__main__":
     opflow_code = "{}_{}_{}_{}_{}_{}".format(str(maxCorners), str(qualityLevel), str(minDistance), str(blockSize), str(winSize),str(maxLevel))
     ml_code = "Logistic_Regression"
 
-        
     runthrough(preprocessing_code, opflow_code, filename, replace, ml_code)
+
+    for kernel in ["rbf", "linear", "poly"]:
+        for gamma in ["auto", "scale"]:
+            for C in ["0.001","0.01","0.1","1", "10", "100"]:
+                svm_code = svm_code = "{}_{}_{}".format(str(kernel), str(gamma), str(C))
+                path = "python SVM.py "+preprocessing_code+" "+opflow_code+" "+filename+" "+svm_code
+                print(path)
+                os.system(path)
+
+    max_depth = "rbf"
+    min_samples_split = "auto"
+    min_samples_leaf = 1
+
+    for max_depth in [None, 15, 20, 25, 30]:
+        for min_samples_split in [2,3,5,10,20, 25, 30]:
+            for min_samples_leaf in [1,2,5,10, 20]:
+                ml_code = "{}_{}_{}".format(str(max_depth), str(min_samples_split), str(min_samples_leaf))
+                path = "python decisionTree.py "+preprocessing_code+" "+opflow_code+" "+filename+" "+ml_code
+                print(path)
+                os.system(path)
+
+    for alpha in [1, 0.1, 0.01, 0.001, 0.0001, 0.00001,  0.000001]:
+        for n in [5, 10 ,15, 20, 30, 50, 75, 100, 120, 150, 200]:
+            ml_code = "{}_{}".format(str(alpha), str(n))
+            path = "python MLP.py "+preprocessing_code+" "+opflow_code+" "+filename+" "+ml_code
+            print(path)
+            os.system(path)
