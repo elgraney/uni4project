@@ -61,7 +61,7 @@ if __name__ == '__main__':
     #Scale data - currently does normal then standard
 
     data = ML.normalisation(data)
-    training_set, test_set = ML.split_data_set(data)
+    training_set, test_set = ML.split_data_set(data, False)
 
     features = list(data.keys())[1:]
     print("Estimating with features {}".format(features))

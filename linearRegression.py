@@ -13,6 +13,8 @@ import commonFunctions
 from sklearn import preprocessing
 import numpy as np
 import machineLearning as ML
+import warnings
+from matplotlib import pyplot as plt
 
 
 
@@ -29,8 +31,11 @@ def input_regression_params(args):
 
     return  ml_code
 
+
+
 if __name__ == '__main__':
     start = time.time()
+    warnings.filterwarnings("ignore")
 
     preprocessing_code, opflow_code, filename = commonFunctions.code_inputs(sys.argv)
     ml_code = input_regression_params(sys.argv)
@@ -49,6 +54,7 @@ if __name__ == '__main__':
 
     
     results = {}
+    models = {}
     test_indices = range(len(list(procedure.values())[0])-1)
     for test_index in test_indices: # Each test (max of 1000)
         test_bools = ML.test_features(procedure, test_index)
@@ -56,6 +62,7 @@ if __name__ == '__main__':
         test_save_dir = os.path.join(save_dir, ml_code, test_id)
         commonFunctions.makedir(test_save_dir)
         results[test_id] = {}
+        models[test_id] = []
 
 
         test_output = []
@@ -67,9 +74,9 @@ if __name__ == '__main__':
 
 
             model = trainRegressor(training_data, training_categories)
-
             test_output += evaluation.test(model, test_data, test_categories)
-
+        
+        models[test_id].append(model)
         #eval metrics
         results[test_id]["exact_accuracy"] = evaluation.exact_accuracy(test_output)
         results[test_id]["lenient_accuracy"] = evaluation.lenient_accuracy(test_output)
@@ -81,8 +88,8 @@ if __name__ == '__main__':
         ML.output_logs(test_output, test_save_dir)
         ML.output_stats(results[test_id], test_save_dir)
     
-    evaluation.test_ranking(os.path.join(save_dir, ml_code))
-        
+    _, _, MSE_stats = evaluation.test_ranking(os.path.join(save_dir, ml_code))
+    #evaluation.feature_importance_LR(models, MSE_stats)
 
     end=time.time()
     print("estimation duration:")

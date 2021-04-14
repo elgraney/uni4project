@@ -60,32 +60,6 @@ def test_ranking(load_dir, output = True):
             acc = str(round(float(lenient_stats[key]), 3))
             print(str(key)+": "+value+", "+acc+"%")
     return exact_stats, lenient_stats, MSE_stats
-    # TODO NEEDS A WHOLE LOT OF WORK!
-
-'''
-def test_ranking(load_dir, output = True):
-    # Feature search takes place in the model selection phase and the best 10 or so models are saved. 
-    # So delete this
-    exact_stats = {}
-    lenient_stats = {}
-    for test in os.listdir(load_dir):
-        with open(os.path.join(load_dir, test, "Statistics.txt")) as stats_file:
-            file_id = test
-            exact_stats[file_id] = stats_file.readline().split(" ")[1]
-            lenient_stats[file_id] = stats_file.readline().split(" ")[1]
-
-    exact_stats = dict(sorted(exact_stats.items(), key=lambda item: item[1]))
-    lenient_stats = dict(sorted(lenient_stats.items(), key=lambda item: item[1]))
-    
-    if output:
-        keys = list(lenient_stats.keys())[-10:]
-        values = list(lenient_stats.values())[-10:]
-        for key, value in zip(keys, values):
-            value = str(round(float(value), 3))
-            print(str(key)+": "+value+"%")
-    return exact_stats, lenient_stats
-'''
-
 
 
 def test(model, test_data, test_categories):
@@ -335,9 +309,34 @@ def feature_ranking(load_dir, output = True):
             print(str(key)+": "+value+", "+acc+"%")
     return exact_stats, lenient_stats, MSE_stats
 
+def feature_importance_LR(models, MSE_stats):
+    key = "ean,meanSD,sd,sdSD,dirSd,dirSdSD,trMeans,trMeansSD,trSds,trSdsSD,aglCons,aglConsSD,aglRng,aglRngSD,oscRate,oscRateSD,oscCons,oscConsSD"
+    model_list = models[key]
+    for model in model_list:
+        importance = model.coef_[0]
+        # summarize feature importance
+        for i,v in enumerate(importance):
+            print('Feature: %0d, Score: %.5f' % (i,v))
+        # plot feature importance
+        plt.bar([x for x in range(len(importance))], importance)
+        plt.xticks([x for x in range(len(importance)) if x%2 == 0],[1,2,3,4,5,6,7,8,9])
+        plt.show()
+
+def feature_importance_DT(models):
+    key = "ean,meanSD,sd,sdSD,dirSd,dirSdSD,trMeans,trMeansSD,trSds,trSdsSD,aglCons,aglConsSD,aglRng,aglRngSD,oscRate,oscRateSD,oscCons,oscConsSD"
+    model_list = models[key]
+    for model in model_list:
+        importance = model.feature_importances_
+        # summarize feature importance
+        for i,v in enumerate(importance):
+            print('Feature: %0d, Score: %.5f' % (i,v))
+        # plot feature importance
+        plt.bar([x for x in range(len(importance))], importance)
+        plt.xticks([x for x in range(len(importance)) if x%2 == 0],[1,2,3,4,5,6,7,8,9])
+        plt.show()
 
 if __name__ == "__main__":
-    directory = "V:\\Uni4\\SoloProject\\Outputs 2\\"
+    directory = "V:\\Uni4\\SoloProject\\Outputs 2\\MLP"
 
     test_code_bests = {}
     best_MSE = {} # key = param index, value = (value, accuracy)

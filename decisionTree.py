@@ -30,8 +30,8 @@ def input_ml_params(args):
             except:
                 max_depth = None
 
-            min_samples_split = 2
-            min_samples_leaf = 1
+            min_samples_split = int(ml_code[1])
+            min_samples_leaf = int(ml_code[2])
 
         except:
             print("Error in input string: using default settings")
@@ -66,13 +66,14 @@ if __name__ == '__main__':
 
     #Scale data - currently does normal then standard
     data = ML.normalisation(data)
-    training_set, test_set = ML.split_data_set(data)
+    training_set, test_set = ML.split_data_set(data, False)
 
     features = list(data.keys())[1:]
     print("Estimating with features {}".format(features))
     procedure = ML.test_order(features)
 
     results = {}
+    models = {}
     test_indices = range(len(list(procedure.values())[0])-1)
     if len(test_indices) > 1000:
         print("Limiting to 1000")
@@ -84,6 +85,7 @@ if __name__ == '__main__':
         test_save_dir = os.path.join(save_dir, ml_code, test_id)
         commonFunctions.makedir(test_save_dir)
         results[test_id] = {}
+        models[test_id] = []
 
         test_output = []
         for repeat in range(constants.training_repetitions):
@@ -93,9 +95,9 @@ if __name__ == '__main__':
             test_data, test_categories = ML.filter_data_by_procedure(procedure, test_set, test_index)
 
             model = trainDT(training_data, training_categories, max_depth, min_samples_split, min_samples_leaf)
-
+            
             test_output += evaluation.test(model, test_data, test_categories)
-
+        models[test_id].append(model)
         #eval metrics
         results[test_id]["exact_accuracy"] = evaluation.exact_accuracy(test_output)
         results[test_id]["lenient_accuracy"] = evaluation.lenient_accuracy(test_output)
@@ -108,6 +110,7 @@ if __name__ == '__main__':
         ML.output_stats(results[test_id], test_save_dir)
         
     evaluation.test_ranking(os.path.join(save_dir, ml_code))
+    #evaluation.feature_importance_DT(models)
 
     end=time.time()
     print("estimation duration:")

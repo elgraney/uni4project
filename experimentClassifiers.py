@@ -76,8 +76,8 @@ if __name__ == "__main__":
                 print(path)
                 os.system(path)
 
-    for alpha in [1, 0.1, 0.01, 0.001, 0.0001, 0.00001,  0.000001]:
-        for n in [5, 10 ,15, 20, 30, 50, 75, 100, 120, 150, 200]:
+    for alpha in [1]:
+        for n in  [120, 135, 150,165, 185, 200, 220, 250, 300]:
             ml_code = "{}_{}".format(str(alpha), str(n))
             path = "python MLP.py "+preprocessing_code+" "+opflow_code+" "+filename+" "+ml_code
             print(path)
