@@ -32,7 +32,6 @@ def capture_video():
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-    upload_video(filename)
 
 def upload_video(filename):
     print("Uploading", filename)
