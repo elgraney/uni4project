@@ -46,4 +46,21 @@ def upload_video(filename):
 
 
 if __name__ == "__main__":
-    capture_video()
+    schedule.every().day.at("07:00").do(capture_video)
+    schedule.every().day.at("08:00").do(capture_video)
+    schedule.every().day.at("09:00").do(capture_video)
+    schedule.every().day.at("10:00").do(capture_video)
+    schedule.every().day.at("11:00").do(capture_video)
+    schedule.every().day.at("12:00").do(capture_video)
+    schedule.every().day.at("13:00").do(capture_video)
+    schedule.every().day.at("14:00").do(capture_video)
+    schedule.every().day.at("15:00").do(capture_video)
+    schedule.every().day.at("16:00").do(capture_video)
+    schedule.every().day.at("17:00").do(capture_video)
+    schedule.every().day.at("18:00").do(capture_video)
+
+
+
+    while 1:
+        schedule.run_pending()
+        time.sleep(1)

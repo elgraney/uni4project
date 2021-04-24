@@ -57,7 +57,7 @@ def test_ranking(load_dir, output = True):
         keys = list(MSE_stats.keys())[-10:]
         for key in keys:
             value = str(round(float(MSE_stats[key]), 3))
-            acc = str(round(float(lenient_stats[key]), 3))
+            acc = str(round(float(exact_stats[key]), 3))
             print(str(key)+": "+value+", "+acc+"%")
     return exact_stats, lenient_stats, MSE_stats
 
@@ -328,19 +328,33 @@ def feature_importance_DT(models):
     for model in model_list:
         importance = model.feature_importances_
         # summarize feature importance
+        combined_importance = []
+        sm = 0
         for i,v in enumerate(importance):
             print('Feature: %0d, Score: %.5f' % (i,v))
+            sm += v
+            if i%2 != 0:
+                combined_importance.append(sm)
+                sm = 0
+
         # plot feature importance
         plt.bar([x for x in range(len(importance))], importance)
         plt.xticks([x for x in range(len(importance)) if x%2 == 0],[1,2,3,4,5,6,7,8,9])
         plt.show()
 
+        plt.bar([x for x in range(len(combined_importance))], combined_importance)
+        plt.xticks([x for x in range(len(combined_importance))],[1,2,3,4,5,6,7,8,9])
+        plt.show()
+
+
+
 if __name__ == "__main__":
-    directory = "V:\\Uni4\\SoloProject\\Outputs 2\\MLP"
+    directory = "V:\\Uni4\\SoloProject\\Outputs"
 
     test_code_bests = {}
     best_MSE = {} # key = param index, value = (value, accuracy)
     best_len_acc = {}
+    best_acc = {}
     for prepep_test in os.listdir(directory):
         if "v" not in prepep_test and prepep_test != "Unique_Code":
             
@@ -365,13 +379,18 @@ if __name__ == "__main__":
                         try:
                             best_MSE[param_index].append((params[param_index], MSE_stats[last_MSE]))
                             best_len_acc[param_index].append((params[param_index], lenient_stats[last_len]))
+                            best_acc[param_index].append((params[param_index], exact_stats[last_len]))
                         except:
                             best_MSE[param_index] = [(params[param_index], MSE_stats[last_MSE])]
                             best_len_acc[param_index]= [(params[param_index], lenient_stats[last_len])]
+                            best_acc[param_index]= [(params[param_index], exact_stats[last_len])]
     
     test_code_bests =  {k: v for k, v in sorted(test_code_bests.items(), key=lambda item: item[1])}
     print(list(test_code_bests.keys())[:10])
     print(list(test_code_bests.values())[:10])
+
+    for key in list(test_code_bests.keys())[:30]:
+        print(key, test_code_bests[key])
     
     for key, value in best_MSE.items():
         sorted_value = sorted(value, key=lambda val: eval(val[1]))  
