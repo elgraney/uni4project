@@ -12,7 +12,7 @@ def capture_video():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
 
-    filename = datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H-%M-%S.avi")
+    filename = datetime.datetime.strftime(datetime.datetime.now(), "Special_Capture_%Y-%m-%d %H-%M-%S.avi")
     print("making",filename)
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(filename,fourcc, 10.0, (1920,1080))
@@ -46,21 +46,4 @@ def upload_video(filename):
 
 
 if __name__ == "__main__":
-    schedule.every().day.at("07:00").do(capture_video)
-    schedule.every().day.at("08:00").do(capture_video)
-    schedule.every().day.at("09:00").do(capture_video)
-    schedule.every().day.at("10:00").do(capture_video)
-    schedule.every().day.at("11:00").do(capture_video)
-    schedule.every().day.at("12:00").do(capture_video)
-    schedule.every().day.at("13:00").do(capture_video)
-    schedule.every().day.at("14:00").do(capture_video)
-    schedule.every().day.at("15:00").do(capture_video)
-    schedule.every().day.at("16:00").do(capture_video)
-    schedule.every().day.at("17:00").do(capture_video)
-    schedule.every().day.at("18:00").do(capture_video)
-
-
-
-    while 1:
-        schedule.run_pending()
-        time.sleep(1)
+    capture_video()
