@@ -12,7 +12,7 @@ def capture_video():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
 
-    filename = datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H-%M-%S.avi")
+    filename = datetime.datetime.strftime(datetime.datetime.now(), "Special_Capture_%Y-%m-%d %H-%M-%S.avi")
     print("making",filename)
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(filename,fourcc, 10.0, (1920,1080))
