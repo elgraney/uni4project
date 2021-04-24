@@ -46,4 +46,6 @@ def upload_video(filename):
 
 
 if __name__ == "__main__":
+    print("Beginning capture")
     capture_video()
+    print("Completed capture")
