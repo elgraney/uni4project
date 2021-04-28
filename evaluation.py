@@ -57,7 +57,7 @@ def test_ranking(load_dir, output = True):
         keys = list(MSE_stats.keys())[-10:]
         for key in keys:
             value = str(round(float(MSE_stats[key]), 3))
-            acc = str(round(float(exact_stats[key]), 3))
+            acc = str(round(float(lenient_stats[key]), 3))
             print(str(key)+": "+value+", "+acc+"%")
     return exact_stats, lenient_stats, MSE_stats
 
@@ -349,7 +349,7 @@ def feature_importance_DT(models):
 
 
 if __name__ == "__main__":
-    directory = "V:\\Uni4\\SoloProject\\Outputs"
+    directory = "V:\\Uni4\\SoloProject\\Outputs 2\\DT"
 
     test_code_bests = {}
     best_MSE = {} # key = param index, value = (value, accuracy)

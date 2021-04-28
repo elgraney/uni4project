@@ -90,6 +90,13 @@ if __name__ == '__main__':
     
     _, _, MSE_stats = evaluation.test_ranking(os.path.join(save_dir, ml_code))
     #evaluation.feature_importance_LR(models, MSE_stats)
+    
+
+    save_id = max(models.keys(), key=len)
+    print(save_id)
+    with open("Best_clf", 'wb') as out:
+        pickle.dump(models[save_id], out)
+    
 
     end=time.time()
     print("estimation duration:")

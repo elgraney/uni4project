@@ -20,7 +20,7 @@ def runthrough(preprocessing_code, opflow_code, filename, replace, svm_code):
     os.system(path)
     path = "python 2dFeatureSelection.py "+preprocessing_code+" "+opflow_code+" "+filename
     os.system(path)
-    path = "python linearRegression.py "+preprocessing_code+" "+opflow_code+" "+filename+" "+svm_code
+    path = "python SVM.py "+preprocessing_code+" "+opflow_code+" "+filename+" "+svm_code
     print(path)
     os.system(path)
 
